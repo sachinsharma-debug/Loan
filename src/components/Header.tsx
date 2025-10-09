@@ -3,11 +3,17 @@ import "./Header.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Company } from "@/types";
-const API_BASE_URL = "http://localhost:3000/api/v1";
+import { gettoken } from "@/api/config";
 
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
 
 const Header = () => {
   const navigate = useNavigate();
+  const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+
+
   const {
     user,
     selectedCompany,
@@ -45,11 +51,9 @@ const Header = () => {
         setShowCompanyDropdown(false);
       }
     };
-
     if (showCompanyDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -68,24 +72,38 @@ const Header = () => {
     navigate("/settings");
   };
 
-  const handleCompanySelect = async(company: Company) => {
-    console.log("Selected company:", company.id);
+  const setcompanyfunc = async () => {
+      //  console.log(selectedCompany)
+       fetch(`http://localhost:3000/api/v1/setcompanyid`,{   method: "POST",         
+       headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${gettoken()}`
+        },
+        body: JSON.stringify({ companyid: selectedCompany?.id }),
+      } ).then(async (response) => {    
+        if (response.ok) {
+          dispatch(setcompanyid(selectedCompany?.id))
+          let data = await response.json();
+          console.log(data,"set company api response")
+        }
+      }).catch((error) => {
+        console.error("Error fetching user:", error);
+        return false
+      });
 
-fetch(API_BASE_URL+"/setcompanyid",{
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ companyid: company.id }),
-})
-.then((res)=>{
-  setSelectedCompany(company);
-    setShowCompanyDropdown(false);
-})
-.catch((res)=>{
+  }
 
-})
   
+
+  useEffect(()=>{
+   setcompanyfunc()
+  },[selectedCompany])
+
+  const handleCompanySelect = (company: Company) => {
+
+    setcompanyfunc()
+    setSelectedCompany(company);
+    setShowCompanyDropdown(false);
   };
 
   const handleRefreshCompanies = async () => {
@@ -93,10 +111,6 @@ fetch(API_BASE_URL+"/setcompanyid",{
     await refreshCompanies();
     setIsLoadingCompanies(false);
   };
-
-
-
-
 
   const displayCompanyName = selectedCompany?.companyName || "DEMO COMPANY";
   const isAdmin = user?.role === "admin";
@@ -151,7 +165,7 @@ fetch(API_BASE_URL+"/setcompanyid",{
       </header>
     );
   }
-
+console.log(isAdmin,hasMultipleCompanies,">>>>>>>>>>>>>mmmmm ")
   return (
     <header className="top-header">
       {/* <div className="left">

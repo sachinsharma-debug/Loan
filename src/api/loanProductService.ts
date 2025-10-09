@@ -1,12 +1,14 @@
 import type { LoanProduct } from "@/types";
-
+import { gettoken } from "./config";
 // Align base path with other API modules in this project
 const API_BASE_URL = "http://localhost:3000/api/v1";
 
 export const getLoanProducts = async (): Promise<LoanProduct[]> => {
   const response = await fetch(`${API_BASE_URL}/get_master/loanproduct`,{
-      credentials: 'include' ,
-
+    method: "GET",headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${gettoken()}`
+        },
   });
   if (!response.ok) {
     throw new Error("Failed to fetch loan products");
@@ -18,12 +20,11 @@ export const createLoanProduct = async (
   product: Omit<LoanProduct, "id">
 ): Promise<LoanProduct> => {
   const response = await fetch(`${API_BASE_URL}/create_master`, {
-      credentials: 'include' ,
-
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+  headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${gettoken()}`
+      },
     body: JSON.stringify({ tablename: "loanproduct", data: product }),
   });
 
@@ -39,12 +40,11 @@ export const updateLoanProduct = async (
 ): Promise<LoanProduct> => {
   // Backend uses a generic update_master endpoint similar to create
   const response = await fetch(`${API_BASE_URL}/update_master/${id}`, {
-      credentials: 'include' ,
-
     method: "PUT",
     headers: {
-      "Content-Type": "application/json",
-    },
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${gettoken()}`
+        },
     body: JSON.stringify({ tablename: "loanproduct", id, data: product }),
   });
 
@@ -59,9 +59,10 @@ export const deleteLoanProduct = async (id: string): Promise<void> => {
     `${API_BASE_URL}/delete_master/${id}/loanproduct`,
     {
       method: "DELETE",
-      credentials: 'include' ,
-
-      headers: { "Content-Type": "application/json" },
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: JSON.stringify({ tablename: "loanproduct", id }),
     }
   );

@@ -1,13 +1,15 @@
 import type { Company, Branch } from "@/types";
-
+import { gettoken } from "./config";
 const API_BASE_URL = "http://localhost:3000/api/v1";
 
 // Small helper mirroring the style used in loanProductService.ts
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
-    credentials: 'include' ,
     headers: {
-      "Content-Type": "application/json",
+   
+           "Content-Type": "application/json",
+           "Authorization": `Bearer ${gettoken()}`,
+        
       ...(options?.headers || {}),
     },
     ...(options || {}),

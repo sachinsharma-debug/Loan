@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "react-toastify";
+import { gettoken } from "@/api/config";
 const API_URL = "http://localhost:3000/api/v1";
 import {
   Table,
@@ -56,7 +57,12 @@ interface User {
 
 const fetchUsers = async (): Promise<User[]> => {
   try {
-    const response = await fetch(`${API_URL}/users_list`);
+    const response = await fetch(`${API_URL}/users_list`,{
+      method: "GET",headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
+    });
 
     // Check if the response is actually JSON
     const contentType = response.headers.get("content-type");
@@ -137,8 +143,9 @@ const createUser = async (
     const response = await fetch(`${API_URL}/register`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-      },
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: JSON.stringify(user),
     });
 
@@ -163,8 +170,9 @@ const updateUser = async (id: string, user: Partial<User>): Promise<User> => {
     const response = await fetch(`${API_URL}/update_users/${id}`, {
       method: "PATCH",
       headers: {
-        "Content-Type": "application/json",
-      },
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: JSON.stringify(user),
     });
 
@@ -188,9 +196,10 @@ const deleteUser = async (id: string): Promise<void> => {
   try {
     const response = await fetch(`${API_URL}/delete_user_by_id/${id}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
+     headers: {
+           "Content-Type": "application/json",
+           "Authorization": `Bearer ${gettoken()}`
+         },
     });
 
     const contentType = response.headers.get("content-type");

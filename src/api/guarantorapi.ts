@@ -1,12 +1,15 @@
 import type { Guarantor } from "@/types";
-
+import { gettoken } from "./config";
 // Align base path with other API modules in this project
 const API_BASE_URL = "http://localhost:3000/api/v1";
 
 export const getGuarantors = async (): Promise<Guarantor[]> => {
   const response = await fetch(`${API_BASE_URL}/get_master/guarantor`,{
-      credentials: 'include' ,
-
+    method: "GET",
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
   });
   if (!response.ok) {
     throw new Error("Failed to fetch guarantors");
@@ -19,11 +22,10 @@ export const createGuarantor = async (
 ): Promise<Guarantor> => {
   const response = await fetch(`${API_BASE_URL}/create_master`, {
     method: "POST",
-      credentials: 'include' ,
-
-    headers: {
-      "Content-Type": "application/json",
-    },
+   headers: {
+         "Content-Type": "application/json",
+         "Authorization": `Bearer ${gettoken()}`
+       },
     body: JSON.stringify({ tablename: "guarantor", data: product }),
   });
 
@@ -39,12 +41,11 @@ export const updateGuarantor = async (
 ): Promise<Guarantor> => {
   // Backend uses a generic update_master endpoint similar to create
   const response = await fetch(`${API_BASE_URL}/update_master/${id}`, {
-      credentials: 'include' ,
-
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
+   headers: {
+         "Content-Type": "application/json",
+         "Authorization": `Bearer ${gettoken()}`
+       },
     body: JSON.stringify({ tablename: "guarantor", id, data: product }),
   });
 
@@ -59,9 +60,10 @@ export const deleteGuarantor = async (id: string): Promise<void> => {
     `${API_BASE_URL}/delete_master/${id}/guarantor`,
     {
       method: "DELETE",
-      credentials: 'include' ,
-
-      headers: { "Content-Type": "application/json" },
+    headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${gettoken()}`
+        },
       body: JSON.stringify({ tablename: "guarantor", id }),
     }
   );
@@ -72,9 +74,13 @@ export const deleteGuarantor = async (id: string): Promise<void> => {
 
 export const searchGuarantors = async (query: string): Promise<Guarantor[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/get_master/guarantor?search=${encodeURIComponent(query)}`,{
-      credentials: 'include' ,
-
+    `${API_BASE_URL}/get_master/guarantor?search=${encodeURIComponent(query)}`,
+    {
+      method: "GET",
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
     }
   );
   if (!response.ok) {
@@ -101,8 +107,10 @@ export const guarantorApi = {
   },
   getById: async (id: string): Promise<Guarantor> => {
     const resp = await fetch(`${API_BASE_URL}/get_master/guarantor/${id}`,{
-      credentials: 'include' ,
-
+      method: "GET",headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
     });
     if (!resp.ok) throw new Error("Failed to fetch guarantor");
     return resp.json();
@@ -124,9 +132,10 @@ export const guarantorApi = {
       // Fallback: try a more permissive request without isActive if first attempt failed.
       const resp = await fetch(`${API_BASE_URL}/update_master/${id}`, {
         method: "PUT",
-      credentials: 'include' ,
-
-        headers: { "Content-Type": "application/json" },
+       headers: {
+             "Content-Type": "application/json",
+             "Authorization": `Bearer ${gettoken()}`
+           },
         body: JSON.stringify({ tablename: "guarantor", id, data: rest }),
       });
       if (!resp.ok)

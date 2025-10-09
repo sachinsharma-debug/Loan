@@ -1,3 +1,5 @@
+
+import { gettoken } from "./config";
 // services/file-upload-api.ts
 const API_BASE_URL = "http://localhost:3000/api/v1";
 
@@ -26,7 +28,10 @@ export const fileUploadApi = {
 
     const response = await fetch(`${API_BASE_URL}/masterupload`, {
       method: "POST",
-      credentials: 'include' ,
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: formData,
       signal,
     });
@@ -81,7 +86,10 @@ export const fileUploadApi = {
 
     const response = await fetch(`${API_BASE_URL}/masterupload`, {
       method: "POST",
-      credentials: 'include' ,
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: formData,
       signal,
     });
@@ -107,8 +115,10 @@ export const fileUploadApi = {
   deleteFile: async (fileId: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/mastergetfile/${fileId}`, {
       method: "DELETE",
-      credentials: 'include' ,
-
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
     });
 
     if (!response.ok) {
@@ -142,8 +152,11 @@ export const fileUploadApi = {
   // Get file metadata
   getFileMetadata: async (fileId: string): Promise<FileUploadResponse> => {
     const response = await fetch(`${API_BASE_URL}/mastergetfile/${fileId}`,{
-      credentials: 'include' ,
-
+      method: "GET",
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
     });
 
     if (!response.ok) {

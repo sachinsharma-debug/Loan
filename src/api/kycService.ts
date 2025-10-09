@@ -1,5 +1,5 @@
 import type { KYC } from "@/types";
-
+import { gettoken } from "./config";
 const API_BASE_URL = "http://localhost:3000/api/v1";
 
 // API response types
@@ -54,10 +54,12 @@ function transformToApiKYC(
 
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
+    
     headers: {
-      "Content-Type": "application/json",
-      credentials: 'include' ,
-
+   
+           "Content-Type": "application/json",
+           "Authorization": `Bearer ${gettoken()}`,
+         
       ...(options?.headers || {}),
     },
     ...(options || {}),

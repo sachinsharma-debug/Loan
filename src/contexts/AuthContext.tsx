@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { User, Company } from "@/types";
 import { companyApi } from "@/api/organisationstructure";
+import { fetchUsers } from "@/api/user";
 
 interface AuthContextType {
   user: User | null;
@@ -100,28 +101,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
 
+    let tmpreturned = false;
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
+    await fetch(`http://localhost:3000/api/v1/login`,{
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      
+      body: JSON.stringify({ email, password }),
+    } ).then(async (response) => {
 
-    const foundUser = demoUsers.find((u) => u.email === email);
-
-    if (foundUser && password === "password123") {
-      setUser(foundUser);
-      localStorage.setItem("fin_service_user", JSON.stringify(foundUser));
-
-      // Fetch companies after successful login
-      try {
-        await fetchCompanies();
-      } catch (error) {
-        console.error("Failed to fetch companies during login:", error);
+      if (response.ok) {
+        let data = await response.json();
+        
+             setUser(data);
+             localStorage.setItem("fin_service_user", JSON.stringify(data));
+             tmpreturned = true;
+        
       }
+    }).catch((error) => {
+      console.error("Error fetching user:", error);
 
-      setIsLoading(false);
-      return true;
-    }
+      return false
+    });
+
+    // return 
+    // // Fallback to demo users if API call fails or user not found
+
+    // const foundUser = demoUsers.find((u) => u.email === email);
+
+    // if (foundUser && password === "password123") {
+    //   setUser(foundUser);
+    //   localStorage.setItem("fin_service_user", JSON.stringify(foundUser));
+
+    //   // Fetch companies after successful login
+    //   try {
+    //     await fetchCompanies();
+    //   } catch (error) {
+    //     console.error("Failed to fetch companies during login:", error);
+    //   }
+
+    //   setIsLoading(false);
+    //   return true;
+    // }
+             await fetchCompanies();
 
     setIsLoading(false);
-    return false;
+    return tmpreturned;
   };
 
   const logout = () => {

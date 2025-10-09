@@ -4,11 +4,13 @@ import App from "./App.tsx";
 import "./index.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { Provider } from 'react-redux'
+import { store } from './redux/store'
 const root = createRoot(document.getElementById("root")!);
 root.render(
   <React.StrictMode>
     <>
+      <Provider store={store}>
       <App />
       <ToastContainer
         position="top-right"
@@ -20,6 +22,7 @@ root.render(
         draggable
         pauseOnHover
       />
+      </Provider>
     </>
   </React.StrictMode>
 );
