@@ -1,0 +1,89 @@
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 10px 20px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+}
+
+.left,
+.center,
+.right {
+  display: flex;
+  align-items: center;
+}
+
+.left .logo {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.left .dropdown {
+  margin-left: 5px;
+}
+
+.center {
+  flex-direction: column;
+  text-align: center;
+}
+
+.right span {
+  margin: 0 8px;
+  cursor: pointer;
+}
+
+.user-avatar {
+  background: #ccc;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 5px;
+}
+
+.user-avatar::after {
+  display: none;
+}
+
+/* Company Selector Styles */
+.company-selector {
+  position: relative;
+  user-select: none;
+}
+
+.company-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 5px;
+}
+
+.company-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.company-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.company-dropdown::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.company-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
