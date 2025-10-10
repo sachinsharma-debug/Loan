@@ -1,7 +1,7 @@
 
 import { gettoken } from "./config";
 // services/file-upload-api.ts
-const API_BASE_URL = "http://localhost:3000/api/v1";
+const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
 export interface FileUploadResponse {
   success: boolean;

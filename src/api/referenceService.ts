@@ -1,6 +1,6 @@
 import type { Reference } from "@/types";
 import { gettoken } from "./config";
-const API_BASE_URL = "http://localhost:3000/api/v1";
+const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
 // Shared helper to make JSON requests and throw on non-2xx
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {

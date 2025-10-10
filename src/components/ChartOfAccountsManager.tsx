@@ -55,6 +55,11 @@ import { toast } from "react-toastify";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { gettoken } from "@/api/config";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
+
+
+
 interface ChartOfAccount {
   _id: string;
   accountName: string;
@@ -66,7 +71,7 @@ interface ChartOfAccount {
   __v?: number;
 }
 
-const API_BASE_URL = "http://localhost:3000/api/v1";
+const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
 const ChartOfAccountsManager = () => {
   const queryClient = useQueryClient();

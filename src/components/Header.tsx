@@ -74,7 +74,7 @@ const Header = () => {
 
   const setcompanyfunc = async () => {
       //  console.log(selectedCompany)
-       fetch(`http://localhost:3000/api/v1/setcompanyid`,{   method: "POST",         
+       fetch(`https://api-finance.prudent360.in/api/v1/setcompanyid`,{   method: "POST",         
        headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${gettoken()}`

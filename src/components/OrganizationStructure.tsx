@@ -43,6 +43,11 @@ import { createFormKeyDownHandler } from "@/lib/formNavigation";
 import { Textarea } from "./ui/textarea";
 import { Country, State, City } from "country-state-city";
 import { companyApi, branchApi } from "@/api/organisationstructure";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
+
+
+
 // Note: You'll need to implement these APIs for complete functionality:
 // import { transactionApi } from "@/api/transaction";
 // import { masterApi } from "@/api/master";
@@ -146,6 +151,14 @@ const OrganizationStructure = () => {
   const [loading, setLoading] = useState({ companies: false, branches: false });
   const [error, setError] = useState({ companies: "", branches: "" });
 
+const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+  const [cmpchangerendor,setcmpchangerendor]=useState(true)
+
+
+useEffect(()=>{
+setcmpchangerendor(!cmpchangerendor)
+},[companyid])
   const [searchTerm, setSearchTerm] = useState("");
   const [branchSearchTerm, setBranchSearchTerm] = useState("");
   // Additional base currency details toggle for Company form
@@ -421,7 +434,7 @@ const OrganizationStructure = () => {
     // Initialize branch states with Indian states by default
     const indianStates = State.getStatesOfCountry("IN");
     setBranchStates(indianStates);
-  }, []);
+  }, [cmpchangerendor]);
 
   // API functions
   const fetchCompanies = async () => {

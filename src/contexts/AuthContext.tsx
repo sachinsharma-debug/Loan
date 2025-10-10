@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let tmpreturned = false;
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    await fetch(`http://localhost:3000/api/v1/login`,{
+    await fetch(`https://api-finance.prudent360.in/api/v1/login`,{
       method: "POST",
       headers: {
         "Content-Type": "application/json",

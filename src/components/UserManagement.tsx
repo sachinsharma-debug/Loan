@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "react-toastify";
 import { gettoken } from "@/api/config";
-const API_URL = "http://localhost:3000/api/v1";
+const API_URL = "https://api-finance.prudent360.in/api/v1";
 import {
   Table,
   TableBody,

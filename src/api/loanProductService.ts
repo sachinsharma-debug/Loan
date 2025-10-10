@@ -1,7 +1,7 @@
 import type { LoanProduct } from "@/types";
 import { gettoken } from "./config";
 // Align base path with other API modules in this project
-const API_BASE_URL = "http://localhost:3000/api/v1";
+const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
 export const getLoanProducts = async (): Promise<LoanProduct[]> => {
   const response = await fetch(`${API_BASE_URL}/get_master/loanproduct`,{

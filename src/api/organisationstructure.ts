@@ -1,6 +1,6 @@
 import type { Company, Branch } from "@/types";
 import { gettoken } from "./config";
-const API_BASE_URL = "http://localhost:3000/api/v1";
+const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
 // Small helper mirroring the style used in loanProductService.ts
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
