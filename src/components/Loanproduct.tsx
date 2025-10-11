@@ -43,8 +43,8 @@ import {
 } from "@/api/loanProductService";
 import type { LoanProduct } from "@/types";
 import { toast } from "react-toastify";
-import { useSelector, useDispatch } from 'react-redux'
-import { setcompanyid } from '../redux/storeSlice'
+import { useSelector, useDispatch } from "react-redux";
+import { setcompanyid } from "../redux/storeSlice";
 
 // Utility to get unique typeOfLoan and subType options from loanproducts
 export function getLoanTypeOptions(loanproducts: LoanProduct[]) {
@@ -68,16 +68,13 @@ export function getLoanSubTypeOptions(
 }
 
 const LoanProductComponent: React.FC = () => {
+  const companyid = useSelector((state) => state?.Store.companyid);
+  const dispatch = useDispatch();
+  const [cmpchangerendor, setcmpchangerendor] = useState(true);
 
-
-  const companyid = useSelector((state) => state?.Store.companyid)
-  const dispatch = useDispatch()
-  const [cmpchangerendor,setcmpchangerendor]=useState(true)
-
-
-useEffect(()=>{
-setcmpchangerendor(!cmpchangerendor)
-},[companyid])
+  useEffect(() => {
+    setcmpchangerendor(!cmpchangerendor);
+  }, [companyid]);
   // Data + UI state
   const [loanproducts, setLoanproducts] = useState<LoanProduct[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -100,6 +97,8 @@ setcmpchangerendor(!cmpchangerendor)
     { date: string; rate: string }[]
   >([{ date: "", rate: "" }]);
   const [isInterestHistoryDialogOpen, setIsInterestHistoryDialogOpen] =
+    useState(false);
+  const [isInterestHistoryViewOnly, setIsInterestHistoryViewOnly] =
     useState(false);
   const currentInterestRate = useMemo(() => {
     const lastNonEmpty = [...interestHistory]
@@ -333,7 +332,6 @@ setcmpchangerendor(!cmpchangerendor)
       }
     }
   };
-
 
   // Initial fetch
   useEffect(() => {
@@ -699,10 +697,6 @@ setcmpchangerendor(!cmpchangerendor)
     );
   }
 
-
-
-
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -972,106 +966,86 @@ setcmpchangerendor(!cmpchangerendor)
                     />
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 w-1/2">
-                      <Label
-                        htmlFor="interestType"
-                        className="text-xs w-40 text-right"
+                  <div className="flex items-center gap-2 ">
+                    <Label
+                      htmlFor="interestMethod"
+                      className="text-xs w-40 text-right"
+                    >
+                      Interest Method:
+                    </Label>
+                    <div className="flex-1">
+                      <Select
+                        name="interestMethod"
+                        defaultValue={editingType?.interestMethod || ""}
                       >
-                        Interest Type:
-                      </Label>
-                      <div className="flex-1">
-                        <Select
-                          name="interestType"
-                          defaultValue={editingType?.interestType || ""}
+                        <SelectTrigger
+                          className="h-6 text-xs w-full"
+                          data-field-id="interestmethod-select"
                         >
-                          <SelectTrigger
-                            className="h-6 text-xs w-full"
-                            data-field-id="interesttype-select"
-                          >
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent
-                            position="popper"
-                            className="max-h-64 overflow-y-auto w-[var(--radix-select-trigger-width)]"
-                          >
-                            <SelectItem value="simple">Simple</SelectItem>
-                            <SelectItem value="compound">Compound</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 w-1/2">
-                      <Label
-                        htmlFor="interestMethod"
-                        className="text-xs w-40 text-right"
-                      >
-                        Interest Method:
-                      </Label>
-                      <div className="flex-1">
-                        <Select
-                          name="interestMethod"
-                          defaultValue={editingType?.interestMethod || ""}
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+
+                        <SelectContent
+                          position="popper"
+                          className="max-h-64 overflow-y-auto w-[var(--radix-select-trigger-width)]"
                         >
-                          <SelectTrigger
-                            className="h-6 text-xs w-full"
-                            data-field-id="interestmethod-select"
-                          >
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent
-                            position="popper"
-                            className="max-h-64 overflow-y-auto w-[var(--radix-select-trigger-width)]"
-                          >
-                            <SelectItem value="flat-reducing-balance">
-                              Flat Rate (Reducing Balance - Fixed EMI)
-                            </SelectItem>
-                            <SelectItem value="flat-simple-interest">
-                              Flat Rate (Simple Interest on Reducing Balance)
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          <SelectItem value="simple">Simple</SelectItem>
+                          <SelectItem value="compound">Compound</SelectItem>
+                          <SelectItem value="flat-reducing-balance">
+                            Flat Rate (Reducing Balance - Fixed EMI)
+                          </SelectItem>
+                          <SelectItem value="flat-simple-interest">
+                            Flat Rate (Simple Interest on Reducing Balance)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-2">
                     <Label className="text-xs w-40 text-right">
                       Annual Rate Of Interest:
                     </Label>
                     <div className="flex items-center gap-2 flex-1">
-                      <Select
-                        name="annualrateofinterest_applicable"
-                        value={annualRateApplicable}
-                        onValueChange={(v) => {
-                          setAnnualRateApplicable(v as any);
-                          if (v === "yes") {
-                            setInterestHistory([{ date: "", rate: "" }]);
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="h-6 px-3 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                          onClick={() => {
+                            setAnnualRateApplicable("yes");
+                            // Don't reset history, just add a new blank entry if the last one has data
+                            setInterestHistory((prev) => {
+                              const lastEntry = prev[prev.length - 1];
+                              // If the last entry has data, add a new blank entry
+                              if (
+                                lastEntry &&
+                                (lastEntry.date.trim() || lastEntry.rate.trim())
+                              ) {
+                                return [...prev, { date: "", rate: "" }];
+                              }
+                              // If history is empty or last entry is blank, keep as is
+                              return prev.length > 0
+                                ? prev
+                                : [{ date: "", rate: "" }];
+                            });
+                            setIsInterestHistoryViewOnly(false);
                             setIsInterestHistoryDialogOpen(true);
-                            return;
-                          }
-                          setTimeout(() => {
-                            const selectTrigger = document.querySelector(
-                              `[data-field-id="eligibility-select"]`
-                            ) as HTMLElement;
-                            if (selectTrigger) selectTrigger.click();
-                          }, 100);
-                        }}
-                      >
-                        <SelectTrigger
-                          className="h-6 text-xs w-32"
-                          data-field-id="annualrate-select"
+                          }}
+                          data-field-id="annualrate-set-button"
                         >
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent
-                          position="popper"
-                          className="max-h-64 overflow-y-auto w-[var(--radix-select-trigger-width)]"
+                          Set
+                        </button>
+                        <button
+                          type="button"
+                          className="h-6 px-3 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+                          onClick={() => {
+                            setIsInterestHistoryViewOnly(true);
+                            setIsInterestHistoryDialogOpen(true);
+                          }}
+                          data-field-id="annualrate-history-button"
                         >
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          History
+                        </button>
+                      </div>
                       <div className="flex items-center gap-1">
                         <span className="text-xs w-40 text-right font-bold">
                           Current Rate of Interest:
@@ -1684,6 +1658,7 @@ setcmpchangerendor(!cmpchangerendor)
         open={isInterestHistoryDialogOpen}
         onOpenChange={(o) => {
           setIsInterestHistoryDialogOpen(o);
+          setIsInterestHistoryViewOnly(false);
           if (!o && annualRateApplicable !== "yes") {
             setAnnualRateApplicable("no");
           }
@@ -1708,53 +1683,72 @@ setcmpchangerendor(!cmpchangerendor)
                     type="date"
                     className="h-6 text-xs"
                     value={row.date}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setInterestHistory((prev) => {
-                        const copy = [...prev];
-                        copy[idx] = { ...copy[idx], date: v };
-                        return copy;
-                      });
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        // focus next input
-                        const next =
-                          e.currentTarget.parentElement?.querySelectorAll(
-                            "input"
-                          )[1] as HTMLInputElement | undefined;
-                        next?.focus();
-                      }
-                    }}
+                    readOnly={isInterestHistoryViewOnly}
+                    onChange={
+                      isInterestHistoryViewOnly
+                        ? undefined
+                        : (e) => {
+                            const v = e.target.value;
+                            setInterestHistory((prev) => {
+                              const copy = [...prev];
+                              copy[idx] = { ...copy[idx], date: v };
+                              return copy;
+                            });
+                          }
+                    }
+                    onKeyDown={
+                      isInterestHistoryViewOnly
+                        ? undefined
+                        : (e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              // focus next input
+                              const next =
+                                e.currentTarget.parentElement?.querySelectorAll(
+                                  "input"
+                                )[1] as HTMLInputElement | undefined;
+                              next?.focus();
+                            }
+                          }
+                    }
                   />
                   <Input
                     placeholder="11"
                     className="h-6 text-xs"
                     value={row.rate}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setInterestHistory((prev) => {
-                        const copy = [...prev];
-                        copy[idx] = { ...copy[idx], rate: v };
-                        return copy;
-                      });
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        setInterestHistory((prev) => {
-                          // Only add new blank row if current row has some data and it's the last row
-                          if (
-                            idx === prev.length - 1 &&
-                            (prev[idx].date.trim() || prev[idx].rate.trim())
-                          ) {
-                            return [...prev, { date: "", rate: "" }];
+                    readOnly={isInterestHistoryViewOnly}
+                    onChange={
+                      isInterestHistoryViewOnly
+                        ? undefined
+                        : (e) => {
+                            const v = e.target.value;
+                            setInterestHistory((prev) => {
+                              const copy = [...prev];
+                              copy[idx] = { ...copy[idx], rate: v };
+                              return copy;
+                            });
                           }
-                          return prev;
-                        });
-                      }
-                    }}
+                    }
+                    onKeyDown={
+                      isInterestHistoryViewOnly
+                        ? undefined
+                        : (e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              setInterestHistory((prev) => {
+                                // Only add new blank row if current row has some data and it's the last row
+                                if (
+                                  idx === prev.length - 1 &&
+                                  (prev[idx].date.trim() ||
+                                    prev[idx].rate.trim())
+                                ) {
+                                  return [...prev, { date: "", rate: "" }];
+                                }
+                                return prev;
+                              });
+                            }
+                          }
+                    }
                   />
                 </div>
               ))}
@@ -1762,33 +1756,39 @@ setcmpchangerendor(!cmpchangerendor)
           </div>
           <div className="flex justify-between items-center mt-3">
             <div className="text-[10px] text-muted-foreground">
-              Press Enter inside rate to add new line.
+              {isInterestHistoryViewOnly
+                ? "View only. Editing is disabled."
+                : "Press Enter inside rate to add new line."}
             </div>
             <div className="space-x-2">
+              {!isInterestHistoryViewOnly && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setInterestHistory([{ date: "", rate: "" }]);
+                  }}
+                >
+                  Reset
+                </Button>
+              )}
               <Button
                 type="button"
-                variant="outline"
                 onClick={() => {
-                  setInterestHistory([{ date: "", rate: "" }]);
-                }}
-              >
-                Reset
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  if (!currentInterestRate) {
-                    toast.warning("Please enter at least one interest rate");
-                    return;
-                  }
                   setIsInterestHistoryDialogOpen(false);
-                  // Navigate to next field after closing dialog (Add/Edit unified)
-                  setTimeout(() => {
-                    const selectTrigger = document.querySelector(
-                      `[data-field-id="eligibility-select"]`
-                    ) as HTMLElement;
-                    if (selectTrigger) selectTrigger.click();
-                  }, 100);
+                  if (!isInterestHistoryViewOnly) {
+                    if (!currentInterestRate) {
+                      toast.warning("Please enter at least one interest rate");
+                      return;
+                    }
+                    // Navigate to next field after closing dialog (Add/Edit unified)
+                    setTimeout(() => {
+                      const selectTrigger = document.querySelector(
+                        `[data-field-id="eligibility-select"]`
+                      ) as HTMLElement;
+                      if (selectTrigger) selectTrigger.click();
+                    }, 100);
+                  }
                 }}
               >
                 Done
