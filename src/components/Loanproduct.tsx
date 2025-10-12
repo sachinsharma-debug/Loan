@@ -111,6 +111,29 @@ const LoanProductComponent: React.FC = () => {
   const [eligibilitySetup, setEligibilitySetup] = useState<"yes" | "no" | "">(
     ""
   );
+  const [eligibilityHistory, setEligibilityHistory] = useState<
+    {
+      date: string;
+      incomeSource: string;
+      cibilScore: string;
+      ageFrom: string;
+      ageTo: string;
+      incomeOfBorrower: string;
+    }[]
+  >([
+    {
+      date: "",
+      incomeSource: "",
+      cibilScore: "",
+      ageFrom: "",
+      ageTo: "",
+      incomeOfBorrower: "",
+    },
+  ]);
+  const [isEligibilityHistoryDialogOpen, setIsEligibilityHistoryDialogOpen] =
+    useState(false);
+  const [isEligibilityHistoryViewOnly, setIsEligibilityHistoryViewOnly] =
+    useState(false);
   const [isEligibilityDialogOpen, setIsEligibilityDialogOpen] = useState(false);
   const [incomeSourceWeight, setIncomeSourceWeight] = useState<number>(0);
   const [cibilScoreWeight, setCibilScoreWeight] = useState<number>(0);
@@ -123,8 +146,14 @@ const LoanProductComponent: React.FC = () => {
     message: string;
   }>({ isValid: true, message: "" });
 
+  // Ledger fields
+  const [loanDisbursementLedger, setLoanDisbursementLedger] = useState<string>("");
+  const [loanInterestLedger, setLoanInterestLedger] = useState<string>("");
+
   // Applicable Charges
   const [isChargesChecked, setIsChargesChecked] = useState<boolean>(false);
+  const [isChargesHistoryDialogOpen, setIsChargesHistoryDialogOpen] = useState<boolean>(false);
+  const [isChargesHistoryViewOnly, setIsChargesHistoryViewOnly] = useState<boolean>(false);
   const [isChargesDialogOpen, setIsChargesDialogOpen] =
     useState<boolean>(false);
   const [chargesData, setChargesData] = useState<
@@ -160,8 +189,20 @@ const LoanProductComponent: React.FC = () => {
     setAnnualRateApplicable("");
     setInterestHistory([{ date: "", rate: "" }]);
     setEligibilitySetup("");
+    setEligibilityHistory([
+      {
+        date: "",
+        incomeSource: "",
+        cibilScore: "",
+        ageFrom: "",
+        ageTo: "",
+        incomeOfBorrower: "",
+      },
+    ]);
     resetEligibilityWeights();
     setNameValidation({ isValid: true, message: "" });
+    setLoanDisbursementLedger("");
+    setLoanInterestLedger("");
     setIsChargesChecked(false);
     setChargesData([
       {
@@ -175,6 +216,28 @@ const LoanProductComponent: React.FC = () => {
   };
 
   const handleAddChargesRow = () => {
+    // Check if the last row has all fields filled
+    const lastRow = chargesData[chargesData.length - 1];
+    if (
+      !lastRow.ledgerName.trim() ||
+      !lastRow.group.trim() ||
+      !lastRow.appliedOn.trim() ||
+      !lastRow.applicableAs.trim() ||
+      !lastRow.charges.trim()
+    ) {
+      toast.warning("Please fill all fields in the current row before adding a new row");
+      // Focus on the first empty field in the last row
+      const fields = ["ledgerName", "group", "appliedOn", "applicableAs", "charges"];
+      for (const field of fields) {
+        if (!lastRow[field as keyof typeof lastRow].trim()) {
+          const input = document.getElementById(`charges-${chargesData.length - 1}-${field}`);
+          input?.focus();
+          break;
+        }
+      }
+      return;
+    }
+
     setChargesData([
       ...chargesData,
       {
@@ -223,7 +286,26 @@ const LoanProductComponent: React.FC = () => {
           nextInput.focus();
         }
       } else {
-        // Last field in row, add new row and focus first field of new row
+        // Last field in row, validate current row before adding new row
+        const currentRow = chargesData[rowIndex];
+        if (
+          !currentRow.ledgerName.trim() ||
+          !currentRow.group.trim() ||
+          !currentRow.appliedOn.trim() ||
+          !currentRow.applicableAs.trim() ||
+          !currentRow.charges.trim()
+        ) {
+          toast.warning("Please fill all fields in the current row before proceeding to next line");
+          // Focus on the first empty field in current row
+          const emptyField = fields.find(field => !currentRow[field as keyof typeof currentRow].trim());
+          if (emptyField) {
+            const input = document.getElementById(`charges-${rowIndex}-${emptyField}`);
+            input?.focus();
+          }
+          return;
+        }
+        
+        // All fields filled, add new row and focus first field of new row
         handleAddChargesRow();
         setTimeout(() => {
           const newRowInput = document.getElementById(
@@ -406,6 +488,8 @@ const LoanProductComponent: React.FC = () => {
         typeOfLoan,
         subType,
         description,
+        loanDisbursementLedger,
+        loanInterestLedger,
         annualRateOfInterestApplicable: annualRateOfInterestApplicable as
           | "yes"
           | "no",
@@ -426,8 +510,13 @@ const LoanProductComponent: React.FC = () => {
         partialDisbursement,
         accruedInterest,
         foreclosePenalty,
+        chargesData,
         interestHistory,
         applicableFrom: interestHistory
+          .filter((h) => (h.date || "").trim())
+          .map((h) => h.date),
+        eligibilityHistory,
+        eligibilityApplicableFrom: eligibilityHistory
           .filter((h) => (h.date || "").trim())
           .map((h) => h.date),
         isActive: true,
@@ -567,6 +656,8 @@ const LoanProductComponent: React.FC = () => {
         typeOfLoan: selectedLoanType,
         subType,
         description,
+        loanDisbursementLedger,
+        loanInterestLedger,
         annualRateOfInterestApplicable: annualRateOfInterestApplicable as
           | "yes"
           | "no",
@@ -587,8 +678,13 @@ const LoanProductComponent: React.FC = () => {
         partialDisbursement,
         accruedInterest,
         foreclosePenalty,
+        chargesData,
         interestHistory,
         applicableFrom: interestHistory
+          .filter((h) => (h.date || "").trim())
+          .map((h) => h.date),
+        eligibilityHistory,
+        eligibilityApplicableFrom: eligibilityHistory
           .filter((h) => (h.date || "").trim())
           .map((h) => h.date),
         isActive: String(isActiveRaw) === "true",
@@ -631,6 +727,43 @@ const LoanProductComponent: React.FC = () => {
       ]);
     }
 
+    // Populate eligibility history from existing data
+    if (type.eligibilityHistory && Array.isArray(type.eligibilityHistory)) {
+      setEligibilityHistory(
+        Array.isArray(type.eligibilityHistory)
+          ? type.eligibilityHistory.map((row) => ({
+              date: row.date ?? "",
+              incomeSource: row.incomeSource ?? "",
+              cibilScore: row.cibilScore ?? "",
+              ageFrom: row.ageFrom ?? "",
+              ageTo: row.ageTo ?? "",
+              incomeOfBorrower: row.incomeOfBorrower ?? "",
+            }))
+          : [
+              {
+                date: "",
+                incomeSource: "",
+                cibilScore: "",
+                ageFrom: "",
+                ageTo: "",
+                incomeOfBorrower: "",
+              },
+            ]
+      );
+    } else {
+      // If no history, create a basic history entry with existing values
+      setEligibilityHistory([
+        {
+          date: "",
+          incomeSource: type.incomeSourceWeight?.toString() || "",
+          cibilScore: type.cibilScoreWeight?.toString() || "",
+          ageFrom: type.ageFrom?.toString() || "",
+          ageTo: type.ageTo?.toString() || "",
+          incomeOfBorrower: "",
+        },
+      ]);
+    }
+
     // Populate eligibility weights from existing data
     if (type.incomeSourceWeight !== undefined) {
       setIncomeSourceWeight(type.incomeSourceWeight);
@@ -644,6 +777,15 @@ const LoanProductComponent: React.FC = () => {
     if (type.ageTo !== undefined) {
       setAgeTo(type.ageTo);
     }
+    // Populate ledger fields from existing data
+    setLoanDisbursementLedger(type.loanDisbursementLedger || "");
+    setLoanInterestLedger(type.loanInterestLedger || "");
+    
+    // Populate charges data from existing data
+    if (type.chargesData && Array.isArray(type.chargesData)) {
+      setChargesData(type.chargesData);
+    }
+    
     // Prefill selects/flags for add dialog
     setAnnualRateApplicable((type.annualRateOfInterestApplicable as any) || "");
     setEligibilitySetup(((type.totalWeightage as any) || "") as any);
@@ -1063,48 +1205,74 @@ const LoanProductComponent: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Label
-                      htmlFor="loaneligibilitysetup"
-                      className="text-xs w-40 text-right"
-                    >
+                    <Label className="text-xs w-40 text-right">
                       Loan Eligibility:
                     </Label>
-                    <div className="flex-1">
-                      <Select
-                        name="loaneligibilitysetup"
-                        value={eligibilitySetup}
-                        onValueChange={(val) => {
-                          setEligibilitySetup(val as "yes" | "no");
-                          if (val === "yes") {
-                            setIncomeSourceWeight(30);
-                            setCibilScoreWeight(30);
-                            setAgeFrom(18);
-                            setAgeTo(60);
-                            setIsEligibilityDialogOpen(true);
-                            return;
-                          }
-                          setTimeout(() => {
-                            const selectTrigger = document.querySelector(
-                              `[data-field-id="isloanapproved-select"]`
-                            ) as HTMLElement;
-                            if (selectTrigger) selectTrigger.click();
-                          }, 100);
-                        }}
-                      >
-                        <SelectTrigger
-                          className="h-6 text-xs w-full"
-                          data-field-id="eligibility-select"
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="h-6 px-3 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                          onClick={() => {
+                            setEligibilitySetup("yes");
+                            // Don't reset history, just add a new blank entry if the last one has data
+                            setEligibilityHistory((prev) => {
+                              const lastEntry = prev[prev.length - 1];
+                              // If the last entry has data, add a new blank entry
+                              if (
+                                lastEntry &&
+                                (lastEntry.date.trim() ||
+                                  lastEntry.incomeSource.trim() ||
+                                  lastEntry.cibilScore.trim() ||
+                                  lastEntry.ageFrom.trim() ||
+                                  lastEntry.ageTo.trim() ||
+                                  lastEntry.incomeOfBorrower.trim())
+                              ) {
+                                return [
+                                  ...prev,
+                                  {
+                                    date: "",
+                                    incomeSource: "",
+                                    cibilScore: "",
+                                    ageFrom: "",
+                                    ageTo: "",
+                                    incomeOfBorrower: "",
+                                  },
+                                ];
+                              }
+                              // If history is empty or last entry is blank, keep as is
+                              return prev.length > 0
+                                ? prev
+                                : [
+                                    {
+                                      date: "",
+                                      incomeSource: "",
+                                      cibilScore: "",
+                                      ageFrom: "",
+                                      ageTo: "",
+                                      incomeOfBorrower: "",
+                                    },
+                                  ];
+                            });
+                            setIsEligibilityHistoryViewOnly(false);
+                            setIsEligibilityHistoryDialogOpen(true);
+                          }}
+                          data-field-id="eligibility-set-button"
                         >
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent
-                          position="popper"
-                          className="max-h-64 overflow-y-auto w-[var(--radix-select-trigger-width)]"
+                          Set
+                        </button>
+                        <button
+                          type="button"
+                          className="h-6 px-3 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+                          onClick={() => {
+                            setIsEligibilityHistoryViewOnly(true);
+                            setIsEligibilityHistoryDialogOpen(true);
+                          }}
+                          data-field-id="eligibility-history-button"
                         >
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          History
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1144,294 +1312,52 @@ const LoanProductComponent: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Applicable Charges Checkbox and Dialog */}
+                  {/* Applicable Charges Set/History Buttons */}
                   <div className="flex items-center gap-2">
-                    <Label
-                      htmlFor="applicable-charges"
-                      className="text-xs w-40 text-right"
-                    >
+                    <Label className="text-xs w-40 text-right">
                       Applicable Charges:
                     </Label>
-                    <div className="flex-1">
-                      <Dialog
-                        open={isChargesDialogOpen}
-                        onOpenChange={setIsChargesDialogOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <div
-                            className="flex items-center gap-2 cursor-pointer"
-                            onClick={handleChargesCheckboxClick}
-                          >
-                            <input
-                              type="checkbox"
-                              id="applicable-charges"
-                              className="accent-primary"
-                              checked={isChargesChecked}
-                              onChange={(e) => e.stopPropagation()}
-                              tabIndex={0}
-                            />
-                            <span className="text-xs">View/Edit Charges</span>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto z-[60]">
-                          <DialogHeader>
-                            <DialogTitle>Applicable Charges</DialogTitle>
-                          </DialogHeader>
-                          <div
-                            className="overflow-x-auto border rounded-md"
-                            style={{ position: "relative", zIndex: 1 }}
-                          >
-                            <Table className="table-fixed w-full">
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="text-xs py-1 px-2 w-16">
-                                    Sl. No
-                                  </TableHead>
-                                  <TableHead className="text-xs py-1 px-2 w-32">
-                                    Ledger Name
-                                  </TableHead>
-                                  <TableHead className="text-xs py-1 px-2 w-24">
-                                    Group
-                                  </TableHead>
-                                  <TableHead className="text-xs py-1 px-2 w-32">
-                                    Applied On
-                                  </TableHead>
-                                  <TableHead className="text-xs py-1 px-2 w-32">
-                                    Applicable As
-                                  </TableHead>
-                                  <TableHead className="text-xs py-1 px-2 w-24">
-                                    Charges (%/₹)
-                                  </TableHead>
-                                  <TableHead className="text-xs py-1 px-2 w-20">
-                                    Action
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {chargesData.map((row, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell className="text-xs py-1 px-2 text-center">
-                                      {index + 1}
-                                    </TableCell>
-                                    <TableCell className="py-1 px-2">
-                                      <Input
-                                        id={`charges-${index}-ledgerName`}
-                                        className="h-7 text-xs border-gray-300"
-                                        value={row.ledgerName}
-                                        onChange={(e) =>
-                                          handleChargesFieldChange(
-                                            index,
-                                            "ledgerName",
-                                            e.target.value
-                                          )
-                                        }
-                                        onKeyDown={(e) =>
-                                          handleChargesKeyDown(
-                                            e,
-                                            index,
-                                            "ledgerName"
-                                          )
-                                        }
-                                        placeholder="Ledger name"
-                                      />
-                                    </TableCell>
-                                    <TableCell className="py-1 px-2">
-                                      <Input
-                                        id={`charges-${index}-group`}
-                                        className="h-7 text-xs border-gray-300"
-                                        value={row.group}
-                                        onChange={(e) =>
-                                          handleChargesFieldChange(
-                                            index,
-                                            "group",
-                                            e.target.value
-                                          )
-                                        }
-                                        onKeyDown={(e) =>
-                                          handleChargesKeyDown(
-                                            e,
-                                            index,
-                                            "group"
-                                          )
-                                        }
-                                        placeholder="Group"
-                                      />
-                                    </TableCell>
-                                    <TableCell className="py-1 px-2">
-                                      <Select
-                                        value={row.appliedOn}
-                                        onValueChange={(val) =>
-                                          handleChargesFieldChange(
-                                            index,
-                                            "appliedOn",
-                                            val
-                                          )
-                                        }
-                                      >
-                                        <SelectTrigger
-                                          className="h-7 text-xs w-full border-gray-300"
-                                          id={`charges-${index}-appliedOn`}
-                                        >
-                                          <SelectValue
-                                            placeholder="Select"
-                                            className="text-xs"
-                                          />
-                                        </SelectTrigger>
-                                        <SelectContent
-                                          className="text-xs min-w-[200px]"
-                                          position="popper"
-                                          style={{ zIndex: 99999 }}
-                                        >
-                                          <SelectItem
-                                            value="Fixed Deposit"
-                                            className="text-xs py-1"
-                                          >
-                                            Fixed Deposit
-                                          </SelectItem>
-                                          <SelectItem
-                                            value="Loan Application"
-                                            className="text-xs py-1"
-                                          >
-                                            Loan Application
-                                          </SelectItem>
-                                          <SelectItem
-                                            value="Loan Disbursement"
-                                            className="text-xs py-1"
-                                          >
-                                            Loan Disbursement
-                                          </SelectItem>
-                                          <SelectItem
-                                            value="Member Registration"
-                                            className="text-xs py-1"
-                                          >
-                                            Member Registration
-                                          </SelectItem>
-                                          <SelectItem
-                                            value="Recurring Deposit"
-                                            className="text-xs py-1"
-                                          >
-                                            Recurring Deposit
-                                          </SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className="py-1 px-2">
-                                      <Select
-                                        value={row.applicableAs}
-                                        onValueChange={(val) =>
-                                          handleChargesFieldChange(
-                                            index,
-                                            "applicableAs",
-                                            val
-                                          )
-                                        }
-                                      >
-                                        <SelectTrigger
-                                          className="h-7 text-xs w-full border-gray-300"
-                                          id={`charges-${index}-applicableAs`}
-                                        >
-                                          <SelectValue
-                                            placeholder="Select"
-                                            className="text-xs"
-                                          />
-                                        </SelectTrigger>
-                                        <SelectContent
-                                          className="text-xs min-w-[150px]"
-                                          position="popper"
-                                          style={{ zIndex: 99999 }}
-                                        >
-                                          <SelectItem
-                                            value="% of PR Amount"
-                                            className="text-xs py-1"
-                                          >
-                                            % of PR Amount
-                                          </SelectItem>
-                                          <SelectItem
-                                            value="INR"
-                                            className="text-xs py-1"
-                                          >
-                                            INR
-                                          </SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className="py-1 px-2">
-                                      <Input
-                                        id={`charges-${index}-charges`}
-                                        className="h-7 text-xs border-gray-300"
-                                        value={row.charges}
-                                        onChange={(e) =>
-                                          handleChargesFieldChange(
-                                            index,
-                                            "charges",
-                                            e.target.value
-                                          )
-                                        }
-                                        onKeyDown={(e) =>
-                                          handleChargesKeyDown(
-                                            e,
-                                            index,
-                                            "charges"
-                                          )
-                                        }
-                                        placeholder="Amount"
-                                      />
-                                    </TableCell>
-                                    <TableCell className="py-1 px-2 text-center">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600"
-                                        onClick={() => {
-                                          const newData = chargesData.filter(
-                                            (_, i) => i !== index
-                                          );
-                                          setChargesData(
-                                            newData.length > 0
-                                              ? newData
-                                              : [
-                                                  {
-                                                    ledgerName: "",
-                                                    group: "",
-                                                    appliedOn: "",
-                                                    applicableAs: "",
-                                                    charges: "",
-                                                  },
-                                                ]
-                                          );
-                                        }}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </TableCell>
-                                    {/* End TableRow */}
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                          <div className="flex justify-between mt-4">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={handleAddChargesRow}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Row
-                            </Button>
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                setIsChargesDialogOpen(false);
-                              }}
-                            >
-                              Done
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="h-6 px-3 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                          onClick={() => {
+                            setIsChargesChecked(true);
+                            // Don't reset charges data, just add a new blank entry if the last one has data
+                            setChargesData((prev) => {
+                              const lastEntry = prev[prev.length - 1];
+                              // If the last entry has data, add a new blank entry
+                              if (
+                                lastEntry &&
+                                (lastEntry.ledgerName.trim() || lastEntry.group.trim() || lastEntry.appliedOn.trim() || lastEntry.applicableAs.trim() || lastEntry.charges.trim())
+                              ) {
+                                return [...prev, { ledgerName: "", group: "", appliedOn: "", applicableAs: "", charges: "" }];
+                              }
+                              // If charges data is empty or last entry is blank, keep as is
+                              return prev.length > 0
+                                ? prev
+                                : [{ ledgerName: "", group: "", appliedOn: "", applicableAs: "", charges: "" }];
+                            });
+                            setIsChargesHistoryViewOnly(false);
+                            setIsChargesHistoryDialogOpen(true);
+                          }}
+                          data-field-id="charges-set-button"
+                        >
+                          Set
+                        </button>
+                        <button
+                          type="button"
+                          className="h-6 px-3 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+                          onClick={() => {
+                            setIsChargesHistoryViewOnly(true);
+                            setIsChargesHistoryDialogOpen(true);
+                          }}
+                          data-field-id="charges-history-button"
+                        >
+                          History
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1783,10 +1709,10 @@ const LoanProductComponent: React.FC = () => {
                     }
                     // Navigate to next field after closing dialog (Add/Edit unified)
                     setTimeout(() => {
-                      const selectTrigger = document.querySelector(
-                        `[data-field-id="eligibility-select"]`
+                      const setButton = document.querySelector(
+                        `[data-field-id="eligibility-set-button"]`
                       ) as HTMLElement;
-                      if (selectTrigger) selectTrigger.click();
+                      if (setButton) setButton.focus();
                     }, 100);
                   }
                 }}
@@ -1795,6 +1721,375 @@ const LoanProductComponent: React.FC = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Eligibility History Dialog */}
+      <Dialog
+        open={isEligibilityHistoryDialogOpen}
+        onOpenChange={(o) => {
+          setIsEligibilityHistoryDialogOpen(o);
+          setIsEligibilityHistoryViewOnly(false);
+          if (!o && eligibilitySetup !== "yes") {
+            setEligibilitySetup("no");
+          }
+        }}
+      >
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] overflow-y-auto z-[60]"
+          style={{ zIndex: 60 }}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {isEligibilityHistoryViewOnly
+                ? "Eligibility History"
+                : "Loan Eligibility Setup"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isEligibilityHistoryViewOnly ? (
+            // History View - Read Only
+            <div className="space-y-3">
+              <div className="border rounded-md overflow-hidden">
+                <div className="grid grid-cols-6 bg-muted text-xs font-semibold px-2 py-1">
+                  <div>Date</div>
+                  <div>Income Source</div>
+                  <div>CIBIL Score</div>
+                  <div>Age From</div>
+                  <div>Age To</div>
+                  <div>Income of Borrower</div>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {eligibilityHistory.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-6 gap-3 items-center px-2 py-1 border-b last:border-b-0"
+                    >
+                      <div className="text-xs">{row.date || "-"}</div>
+                      <div className="text-xs">{row.incomeSource || "-"}</div>
+                      <div className="text-xs">{row.cibilScore || "-"}</div>
+                      <div className="text-xs">{row.ageFrom || "-"}</div>
+                      <div className="text-xs">{row.ageTo || "-"}</div>
+                      <div className="text-xs">
+                        {row.incomeOfBorrower || "-"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setIsEligibilityHistoryDialogOpen(false);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Set Mode - Editable Form
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                // Validate all required fields are filled
+                const currentRow =
+                  eligibilityHistory[eligibilityHistory.length - 1];
+                if (
+                  !currentRow.date.trim() ||
+                  !currentRow.incomeSource.trim() ||
+                  !currentRow.cibilScore.trim() ||
+                  !currentRow.ageFrom.trim() ||
+                  !currentRow.ageTo.trim() ||
+                  !currentRow.incomeOfBorrower.trim()
+                ) {
+                  toast.warning("Please fill all required fields");
+                  return;
+                }
+                setIsEligibilityHistoryDialogOpen(false);
+                // Navigate to next field
+                setTimeout(() => {
+                  const selectTrigger = document.querySelector(
+                    `[data-field-id="isloanapproved-select"]`
+                  ) as HTMLElement;
+                  if (selectTrigger) selectTrigger.click();
+                }, 100);
+              }}
+              className="space-y-3"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs w-40 text-right">Date:</Label>
+                  <Input
+                    id="elig_date"
+                    type="date"
+                    name="elig_date"
+                    className="h-6 text-xs w-40"
+                    value={
+                      eligibilityHistory[eligibilityHistory.length - 1]?.date ||
+                      ""
+                    }
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setEligibilityHistory((prev) => {
+                        const copy = [...prev];
+                        copy[copy.length - 1] = {
+                          ...copy[copy.length - 1],
+                          date: newDate,
+                        };
+                        return copy;
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const next =
+                          document.getElementById("elig_incomeSource");
+                        next?.focus();
+                      }
+                    }}
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs w-40 text-right">
+                    Income Source Weight:
+                  </Label>
+                  <Input
+                    id="elig_incomeSource"
+                    type="number"
+                    name="elig_incomeSource"
+                    value={
+                      eligibilityHistory[eligibilityHistory.length - 1]
+                        ?.incomeSource || ""
+                    }
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setEligibilityHistory((prev) => {
+                        const copy = [...prev];
+                        copy[copy.length - 1] = {
+                          ...copy[copy.length - 1],
+                          incomeSource: newValue,
+                        };
+                        return copy;
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const next = document.getElementById("elig_cibilScore");
+                        next?.focus();
+                      }
+                    }}
+                    className="h-6 text-xs w-32"
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs w-40 text-right">
+                    CIBIL Score Weight:
+                  </Label>
+                  <Input
+                    id="elig_cibilScore"
+                    type="number"
+                    name="elig_cibilScore"
+                    value={
+                      eligibilityHistory[eligibilityHistory.length - 1]
+                        ?.cibilScore || ""
+                    }
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setEligibilityHistory((prev) => {
+                        const copy = [...prev];
+                        copy[copy.length - 1] = {
+                          ...copy[copy.length - 1],
+                          cibilScore: newValue,
+                        };
+                        return copy;
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const next = document.getElementById("elig_ageFrom");
+                        next?.focus();
+                      }
+                    }}
+                    className="h-6 text-xs w-32"
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs w-40 text-right">
+                    Age of Borrower:
+                  </Label>
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input
+                      id="elig_ageFrom"
+                      type="number"
+                      name="elig_ageFrom"
+                      value={
+                        eligibilityHistory[eligibilityHistory.length - 1]
+                          ?.ageFrom || ""
+                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setEligibilityHistory((prev) => {
+                          const copy = [...prev];
+                          copy[copy.length - 1] = {
+                            ...copy[copy.length - 1],
+                            ageFrom: newValue,
+                          };
+                          return copy;
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const next = document.getElementById("elig_ageTo");
+                          next?.focus();
+                        }
+                      }}
+                      className="h-6 text-xs w-20"
+                      placeholder="From"
+                      required
+                    />
+                    <span className="text-xs">to</span>
+                    <Input
+                      id="elig_ageTo"
+                      type="number"
+                      name="elig_ageTo"
+                      value={
+                        eligibilityHistory[eligibilityHistory.length - 1]
+                          ?.ageTo || ""
+                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setEligibilityHistory((prev) => {
+                          const copy = [...prev];
+                          copy[copy.length - 1] = {
+                            ...copy[copy.length - 1],
+                            ageTo: newValue,
+                          };
+                          return copy;
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const next = document.getElementById(
+                            "elig_incomeOfBorrower"
+                          );
+                          next?.focus();
+                        }
+                      }}
+                      className="h-6 text-xs w-20"
+                      placeholder="To"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs w-40 text-right">
+                    Income of Borrower:
+                  </Label>
+                  <Input
+                    id="elig_incomeOfBorrower"
+                    type="number"
+                    name="elig_incomeOfBorrower"
+                    value={
+                      eligibilityHistory[eligibilityHistory.length - 1]
+                        ?.incomeOfBorrower || ""
+                    }
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setEligibilityHistory((prev) => {
+                        const copy = [...prev];
+                        copy[copy.length - 1] = {
+                          ...copy[copy.length - 1],
+                          incomeOfBorrower: newValue,
+                        };
+                        return copy;
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        // Check if all fields are filled before proceeding
+                        const currentRow =
+                          eligibilityHistory[eligibilityHistory.length - 1];
+                        if (
+                          currentRow.date.trim() &&
+                          currentRow.incomeSource.trim() &&
+                          currentRow.cibilScore.trim() &&
+                          currentRow.ageFrom.trim() &&
+                          currentRow.ageTo.trim() &&
+                          currentRow.incomeOfBorrower.trim()
+                        ) {
+                          // All fields filled, add new row and focus on date
+                          setEligibilityHistory((prev) => [
+                            ...prev,
+                            {
+                              date: "",
+                              incomeSource: "",
+                              cibilScore: "",
+                              ageFrom: "",
+                              ageTo: "",
+                              incomeOfBorrower: "",
+                            },
+                          ]);
+                          setTimeout(() => {
+                            const dateField =
+                              document.getElementById("elig_date");
+                            dateField?.focus();
+                          }, 100);
+                        } else {
+                          toast.warning(
+                            "Please fill all fields before adding a new row"
+                          );
+                        }
+                      }
+                    }}
+                    className="h-6 text-xs flex-1"
+                    placeholder="Minimum income amount"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEligibilityHistory([
+                      {
+                        date: "",
+                        incomeSource: "",
+                        cibilScore: "",
+                        ageFrom: "",
+                        ageTo: "",
+                        incomeOfBorrower: "",
+                      },
+                    ]);
+                  }}
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEligibilityHistoryDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save</Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1823,6 +2118,16 @@ const LoanProductComponent: React.FC = () => {
             className="space-y-3"
           >
             <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs w-40 text-right">Date:</Label>
+                <Input
+                  id="elig_date"
+                  type="date"
+                  name="elig_date"
+                  className="h-6 text-xs w-40"
+                  onKeyDown={(e) => handleKeyDown(e, "elig_incomeSource")}
+                />
+              </div>
               <div className="flex items-center gap-2">
                 <Label className="text-xs w-40 text-right">
                   Income Source:
@@ -1904,6 +2209,455 @@ const LoanProductComponent: React.FC = () => {
               <Button type="submit">Save</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Charges History Dialog */}
+      <Dialog
+        open={isChargesHistoryDialogOpen}
+        onOpenChange={(o) => {
+          setIsChargesHistoryDialogOpen(o);
+          setIsChargesHistoryViewOnly(false);
+        }}
+      >
+        <DialogContent
+          className="max-w-7xl max-h-[90vh] overflow-y-auto z-[60]"
+          style={{ zIndex: 60 }}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {isChargesHistoryViewOnly ? "Charges History" : "Applicable Charges Setup"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isChargesHistoryViewOnly ? (
+            // History View - Read Only
+            <div className="space-y-3">
+              <div className="border rounded-md overflow-hidden">
+                <div className="grid grid-cols-5 bg-muted text-xs font-semibold px-2 py-1">
+                  <div>Ledger Name</div>
+                  <div>Group</div>
+                  <div>Applied On</div>
+                  <div>Applicable As</div>
+                  <div>Charges</div>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {chargesData.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-5 gap-3 items-center px-2 py-1 border-b last:border-b-0"
+                    >
+                      <div className="text-xs">{row.ledgerName || "-"}</div>
+                      <div className="text-xs">{row.group || "-"}</div>
+                      <div className="text-xs">{row.appliedOn || "-"}</div>
+                      <div className="text-xs">{row.applicableAs || "-"}</div>
+                      <div className="text-xs">{row.charges || "-"}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setIsChargesHistoryDialogOpen(false);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Set Mode - Editable Form with Ledger Fields + Table
+            <div className="space-y-3">
+              {/* Ledger Fields Section */}
+              <div className="space-y-2 p-4 border rounded-md bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-700">Ledger Configuration</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs w-32 text-right">
+                      Loan Disbursement Ledger:
+                    </Label>
+                    <Input
+                      id="charges_loanDisbursementLedger"
+                      className="h-6 text-xs flex-1"
+                      value={loanDisbursementLedger}
+                      onChange={(e) => setLoanDisbursementLedger(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const next = document.getElementById("charges_loanInterestLedger");
+                          next?.focus();
+                        }
+                      }}
+                      placeholder="Enter disbursement ledger"
+                      required
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs w-32 text-right">
+                      Loan Interest Ledger:
+                    </Label>
+                    <Input
+                      id="charges_loanInterestLedger"
+                      className="h-6 text-xs flex-1"
+                      value={loanInterestLedger}
+                      onChange={(e) => setLoanInterestLedger(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const next = document.getElementById("charges-0-ledgerName");
+                          next?.focus();
+                        }
+                      }}
+                      placeholder="Enter interest ledger"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Charges Table Section */}
+              <div
+                className="overflow-x-auto border rounded-md"
+                style={{ position: "relative", zIndex: 1 }}
+              >
+                <Table className="table-fixed w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs py-1 px-2 w-16">
+                        Sl. No
+                      </TableHead>
+                      <TableHead className="text-xs py-1 px-2 w-32">
+                        Ledger Name
+                      </TableHead>
+                      <TableHead className="text-xs py-1 px-2 w-24">
+                        Group
+                      </TableHead>
+                      <TableHead className="text-xs py-1 px-2 w-32">
+                        Applied On
+                      </TableHead>
+                      <TableHead className="text-xs py-1 px-2 w-32">
+                        Applicable As
+                      </TableHead>
+                      <TableHead className="text-xs py-1 px-2 w-24">
+                        Charges (%/₹)
+                      </TableHead>
+                      <TableHead className="text-xs py-1 px-2 w-20">
+                        Action
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {chargesData.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-xs py-1 px-2 text-center">
+                          {index + 1}
+                        </TableCell>
+                        <TableCell className="py-1 px-2">
+                          <Input
+                            id={`charges-${index}-ledgerName`}
+                            className="h-7 text-xs border-gray-300"
+                            value={row.ledgerName}
+                            onChange={(e) =>
+                              handleChargesFieldChange(
+                                index,
+                                "ledgerName",
+                                e.target.value
+                              )
+                            }
+                            onKeyDown={(e) =>
+                              handleChargesKeyDown(
+                                e,
+                                index,
+                                "ledgerName"
+                              )
+                            }
+                            placeholder="Ledger name"
+                            required
+                          />
+                        </TableCell>
+                        <TableCell className="py-1 px-2">
+                          <Input
+                            id={`charges-${index}-group`}
+                            className="h-7 text-xs border-gray-300"
+                            value={row.group}
+                            onChange={(e) =>
+                              handleChargesFieldChange(
+                                index,
+                                "group",
+                                e.target.value
+                              )
+                            }
+                            onKeyDown={(e) =>
+                              handleChargesKeyDown(
+                                e,
+                                index,
+                                "group"
+                              )
+                            }
+                            placeholder="Group"
+                            required
+                          />
+                        </TableCell>
+                        <TableCell className="py-1 px-2">
+                          <Select
+                            value={row.appliedOn}
+                            onValueChange={(val) => {
+                              handleChargesFieldChange(
+                                index,
+                                "appliedOn",
+                                val
+                              );
+                              // Auto-focus next field after selection
+                              setTimeout(() => {
+                                const nextInput = document.getElementById(
+                                  `charges-${index}-applicableAs`
+                                );
+                                if (nextInput) {
+                                  nextInput.click();
+                                }
+                              }, 100);
+                            }}
+                            required
+                          >
+                            <SelectTrigger
+                              className="h-7 text-xs w-full border-gray-300"
+                              id={`charges-${index}-appliedOn`}
+                            >
+                              <SelectValue
+                                placeholder="Select"
+                                className="text-xs"
+                              />
+                            </SelectTrigger>
+                            <SelectContent
+                              className="text-xs min-w-[200px]"
+                              position="popper"
+                              style={{ zIndex: 99999 }}
+                            >
+                              <SelectItem
+                                value="Fixed Deposit"
+                                className="text-xs py-1"
+                              >
+                                Fixed Deposit
+                              </SelectItem>
+                              <SelectItem
+                                value="Loan Application"
+                                className="text-xs py-1"
+                              >
+                                Loan Application
+                              </SelectItem>
+                              <SelectItem
+                                value="Loan Disbursement"
+                                className="text-xs py-1"
+                              >
+                                Loan Disbursement
+                              </SelectItem>
+                              <SelectItem
+                                value="Member Registration"
+                                className="text-xs py-1"
+                              >
+                                Member Registration
+                              </SelectItem>
+                              <SelectItem
+                                value="Recurring Deposit"
+                                className="text-xs py-1"
+                              >
+                                Recurring Deposit
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="py-1 px-2">
+                          <Select
+                            value={row.applicableAs}
+                            onValueChange={(val) => {
+                              handleChargesFieldChange(
+                                index,
+                                "applicableAs",
+                                val
+                              );
+                              // Auto-focus next field after selection
+                              setTimeout(() => {
+                                const nextInput = document.getElementById(
+                                  `charges-${index}-charges`
+                                );
+                                if (nextInput) {
+                                  nextInput.focus();
+                                }
+                              }, 100);
+                            }}
+                            required
+                          >
+                            <SelectTrigger
+                              className="h-7 text-xs w-full border-gray-300"
+                              id={`charges-${index}-applicableAs`}
+                            >
+                              <SelectValue
+                                placeholder="Select"
+                                className="text-xs"
+                              />
+                            </SelectTrigger>
+                            <SelectContent
+                              className="text-xs min-w-[150px]"
+                              position="popper"
+                              style={{ zIndex: 99999 }}
+                            >
+                              <SelectItem
+                                value="% of PR Amount"
+                                className="text-xs py-1"
+                              >
+                                % of PR Amount
+                              </SelectItem>
+                              <SelectItem
+                                value="INR"
+                                className="text-xs py-1"
+                              >
+                                INR
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="py-1 px-2">
+                          <Input
+                            id={`charges-${index}-charges`}
+                            className="h-7 text-xs border-gray-300"
+                            value={row.charges}
+                            onChange={(e) =>
+                              handleChargesFieldChange(
+                                index,
+                                "charges",
+                                e.target.value
+                              )
+                            }
+                            onKeyDown={(e) =>
+                              handleChargesKeyDown(
+                                e,
+                                index,
+                                "charges"
+                              )
+                            }
+                            placeholder="Amount"
+                            required
+                          />
+                        </TableCell>
+                        <TableCell className="py-1 px-2 text-center">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600"
+                            onClick={() => {
+                              const newData = chargesData.filter(
+                                (_, i) => i !== index
+                              );
+                              setChargesData(
+                                newData.length > 0
+                                  ? newData
+                                  : [
+                                      {
+                                        ledgerName: "",
+                                        group: "",
+                                        appliedOn: "",
+                                        applicableAs: "",
+                                        charges: "",
+                                      },
+                                    ]
+                              );
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex justify-between mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddChargesRow}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Row
+                </Button>
+                <div className="space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setChargesData([
+                        {
+                          ledgerName: "",
+                          group: "",
+                          appliedOn: "",
+                          applicableAs: "",
+                          charges: "",
+                        },
+                      ]);
+                    }}
+                  >
+                    Reset
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsChargesHistoryDialogOpen(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      // Validate ledger fields first
+                      if (!loanDisbursementLedger.trim()) {
+                        toast.warning("Please enter Loan Disbursement Ledger");
+                        const field = document.getElementById("charges_loanDisbursementLedger");
+                        field?.focus();
+                        return;
+                      }
+                      if (!loanInterestLedger.trim()) {
+                        toast.warning("Please enter Loan Interest Ledger");
+                        const field = document.getElementById("charges_loanInterestLedger");
+                        field?.focus();
+                        return;
+                      }
+                      
+                      // Validate that at least one charge entry has all fields filled
+                      const hasValidEntry = chargesData.some(row => 
+                        row.ledgerName.trim() && 
+                        row.group.trim() && 
+                        row.appliedOn.trim() && 
+                        row.applicableAs.trim() && 
+                        row.charges.trim()
+                      );
+                      
+                      if (!hasValidEntry) {
+                        toast.warning("Please fill all fields in at least one charges row");
+                        const firstEmptyField = document.getElementById("charges-0-ledgerName");
+                        firstEmptyField?.focus();
+                        return;
+                      }
+                      
+                      setIsChargesHistoryDialogOpen(false);
+                      // Navigate to next field
+                      setTimeout(() => {
+                        const nextField = document.getElementById("funding");
+                        nextField?.focus();
+                      }, 100);
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

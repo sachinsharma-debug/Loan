@@ -241,14 +241,13 @@ export interface LoanProduct {
   description: string;
   interestType?: "simple" | "compound" | string;
   interestMethod?: string;
-  isActive: boolean;
 
   typeOfLoan?: "not-applicable" | "vehicle" | "other";
   subType?: string;
 
   annualRateOfInterestApplicable?: "yes" | "no";
   currentAnnualRateOfInterest?: string;
-  applicableFrom?: string[];
+
   totalWeightage?: "yes" | "no";
   incomeSourceWeight?: number;
   cibilScoreWeight?: number;
@@ -259,13 +258,25 @@ export interface LoanProduct {
   partialDisbursement?: "yes" | "no";
   accruedInterest?: "yes" | "no";
   foreclosePenalty?: string;
-  interestHistory?: { date: string; rate: string }[];
+
   maxAmount?: number;
   minAmount?: number;
   maxDuration?: number;
   minDuration?: number;
   processingFee?: number;
   documentationFee?: number;
+  interestHistory?: { date: string; rate: string }[];
+  applicableFrom?: string[];
+  eligibilityApplicableFrom?: string[];
+  eligibilityHistory?: {
+    date: string;
+    incomeSource: string;
+    cibilScore: string;
+    ageFrom: string;
+    ageTo: string;
+    incomeOfBorrower: string;
+  }[];
+  isActive?: boolean;
 }
 
 export interface KYC {
