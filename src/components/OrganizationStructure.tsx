@@ -114,6 +114,34 @@ const resolveCityName = (cities: any[], value?: string) => {
   return byName?.name ?? v; // fall back to provided string if not found
 };
 
+// API function to fetch pincode data
+const fetchPincodeData = async (pincode: string) => {
+  try {
+    console.log("Fetching data for pincode:", pincode); // Debug log
+    const response = await fetch(
+      `https://api.postalpincode.in/pincode/${pincode}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Raw API response:", data); // Debug log
+
+    if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice) {
+      console.log("API Success! PostOffice data:", data[0].PostOffice); // Debug log
+      return data[0].PostOffice;
+    } else {
+      console.log("API returned error or no data:", data); // Debug log
+      return null;
+    }
+  } catch (error) {
+    console.error("Pincode API fetch failed:", error);
+    return null;
+  }
+};
+
 // Safe function to search pincode
 const safeSearchByPincode = (pincode: string) => {
   try {
@@ -250,10 +278,9 @@ const fetchfeature=async()=>{
 
 
 
-
-useEffect(()=>{
-setcmpchangerendor(!cmpchangerendor)
-},[companyid])
+  useEffect(() => {
+    setcmpchangerendor(!cmpchangerendor);
+  }, [companyid]);
   const [searchTerm, setSearchTerm] = useState("");
   const [branchSearchTerm, setBranchSearchTerm] = useState("");
   // Additional base currency details toggle for Company form
@@ -309,6 +336,10 @@ setcmpchangerendor(!cmpchangerendor)
   const [branchPincodes, setBranchPincodes] = useState<any[]>([]);
   const [selectedCompanyCity, setSelectedCompanyCity] = useState("");
   const [selectedBranchCity, setSelectedBranchCity] = useState("");
+
+  // District states for auto-fill
+  const [selectedCompanyDistrict, setSelectedCompanyDistrict] = useState("");
+  const [selectedBranchDistrict, setSelectedBranchDistrict] = useState("");
 
   // Pincode validation states
   const [companyPincodeError, setCompanyPincodeError] = useState("");
@@ -676,22 +707,337 @@ setcmpchangerendor(!cmpchangerendor)
     }
   };
 
-  // Handle pincode change (reverse lookup)
-  const handlePincodeChange = (pincode: string, isCompany: boolean = true) => {
-    if (pincode.length === 6 && selectedCompanyCountry === "IN") {
+  // Handle pincode change (auto-fill location data from API)
+  const handlePincodeChange = async (
+    pincode: string,
+    isCompany: boolean = true
+  ) => {
+    if (pincode.length === 6) {
       try {
-        const locationData = safeSearchByPincode(pincode);
-        if (locationData && locationData.length > 0) {
-          // Auto-populate city, state based on pincode
-          const location = locationData[0];
+        // Fetch data from postal pincode API
+        const pincodeData = await fetchPincodeData(pincode);
+
+        if (pincodeData && pincodeData.length > 0) {
+          const location = pincodeData[0];
+
+          console.log("API Response for pincode", pincode, ":", location); // Debug log
+
+          // Auto-populate location fields based on API response
           if (isCompany) {
-            setSelectedCompanyCity(location.circle);
+            // For company form
+            const state = location.State;
+            const district = location.District;
+            const city = location.Name || location.Block;
+
+            console.log(
+              "Extracted values - State:",
+              state,
+              "District:",
+              district,
+              "City:",
+              city
+            ); // Debug log
+
+            // Set district
+            setSelectedCompanyDistrict(district);
+
+            // Find and set country (India)
+            const indiaCountry = countries.find(
+              (c) => c.name === "India" || c.isoCode === "IN"
+            );
+            if (indiaCountry) {
+              setSelectedCompanyCountry(indiaCountry.isoCode);
+              setCurrencyByCountry(indiaCountry.isoCode);
+
+              // Set states for India
+              const indianStates = State.getStatesOfCountry("IN");
+              setCompanyStates(indianStates);
+
+              console.log(
+                "Available states:",
+                indianStates.map((s) => s.name)
+              ); // Debug log
+
+              // Find and set state - improved matching
+              const foundState = indianStates.find((s) => {
+                const stateName = s.name.toLowerCase().trim();
+                const apiState = state.toLowerCase().trim();
+
+                // Exact match
+                if (stateName === apiState) return true;
+
+                // Contains match (both ways)
+                if (
+                  stateName.includes(apiState) ||
+                  apiState.includes(stateName)
+                )
+                  return true;
+
+                // Handle common variations
+                const stateVariations = {
+                  "uttar pradesh": ["up", "u.p.", "uttar pradesh"],
+                  "west bengal": ["wb", "w.b.", "west bengal", "bengal"],
+                  "tamil nadu": ["tn", "t.n.", "tamil nadu", "tamilnadu"],
+                  "andhra pradesh": ["ap", "a.p.", "andhra pradesh"],
+                  "himachal pradesh": ["hp", "h.p.", "himachal pradesh"],
+                  "madhya pradesh": ["mp", "m.p.", "madhya pradesh"],
+                  "jammu and kashmir": [
+                    "j&k",
+                    "jk",
+                    "jammu & kashmir",
+                    "jammu and kashmir",
+                  ],
+                  "dadra and nagar haveli": ["dadra & nagar haveli", "dnhdd"],
+                  "daman and diu": ["daman & diu", "dd"],
+                };
+
+                // Check variations
+                for (const [fullName, variations] of Object.entries(
+                  stateVariations
+                )) {
+                  if (
+                    stateName.includes(fullName) ||
+                    variations.some(
+                      (v) => apiState.includes(v) || stateName.includes(v)
+                    )
+                  ) {
+                    return true;
+                  }
+                }
+
+                return false;
+              });
+
+              console.log("Found state:", foundState); // Debug log
+
+              if (foundState) {
+                setSelectedCompanyState(foundState.isoCode);
+
+                // Set cities for the state
+                const stateCities = City.getCitiesOfState(
+                  "IN",
+                  foundState.isoCode
+                );
+                setCompanyCities(stateCities);
+
+                console.log(
+                  "Available cities for state:",
+                  stateCities.map((c) => c.name)
+                ); // Debug log
+
+                // Find and set city - improved matching
+                const foundCity = stateCities.find((c) => {
+                  const cityName = c.name.toLowerCase().trim();
+                  const apiCity = city.toLowerCase().trim();
+
+                  // Exact match
+                  if (cityName === apiCity) return true;
+
+                  // Contains match (both ways)
+                  if (cityName.includes(apiCity) || apiCity.includes(cityName))
+                    return true;
+
+                  // Remove common suffixes/prefixes for better matching
+                  const cleanCity = apiCity
+                    .replace(/\s+(city|town|rural|urban)$/i, "")
+                    .trim();
+                  const cleanCityName = cityName
+                    .replace(/\s+(city|town|rural|urban)$/i, "")
+                    .trim();
+
+                  if (cleanCityName === cleanCity) return true;
+                  if (
+                    cleanCityName.includes(cleanCity) ||
+                    cleanCity.includes(cleanCityName)
+                  )
+                    return true;
+
+                  return false;
+                });
+
+                console.log("Found city:", foundCity); // Debug log
+
+                if (foundCity) {
+                  setSelectedCompanyCity(foundCity.name);
+                } else {
+                  // If city not found in the list, use the API response directly
+                  setSelectedCompanyCity(city);
+                  console.log(
+                    "City not found in dropdown, using API value:",
+                    city
+                  );
+                }
+              } else {
+                console.log(
+                  "State not found, available states:",
+                  indianStates.map((s) => s.name)
+                );
+                // Even if state not found, still set the district
+                setSelectedCompanyDistrict(district);
+              }
+            }
+
+            // Clear any previous errors
+            setCompanyPincodeError("");
           } else {
-            setSelectedBranchCity(location.circle);
+            // For branch form
+            const state = location.State;
+            const district = location.District;
+            const city = location.Name || location.Block;
+
+            console.log(
+              "Branch form - State:",
+              state,
+              "District:",
+              district,
+              "City:",
+              city
+            ); // Debug log
+
+            // Set district
+            setSelectedBranchDistrict(district);
+
+            // Set states for India (branches default to India)
+            const indianStates = State.getStatesOfCountry("IN");
+            setBranchStates(indianStates);
+
+            // Find and set state - improved matching (same logic as company)
+            const foundState = indianStates.find((s) => {
+              const stateName = s.name.toLowerCase().trim();
+              const apiState = state.toLowerCase().trim();
+
+              // Exact match
+              if (stateName === apiState) return true;
+
+              // Contains match (both ways)
+              if (stateName.includes(apiState) || apiState.includes(stateName))
+                return true;
+
+              // Handle common variations
+              const stateVariations = {
+                "uttar pradesh": ["up", "u.p.", "uttar pradesh"],
+                "west bengal": ["wb", "w.b.", "west bengal", "bengal"],
+                "tamil nadu": ["tn", "t.n.", "tamil nadu", "tamilnadu"],
+                "andhra pradesh": ["ap", "a.p.", "andhra pradesh"],
+                "himachal pradesh": ["hp", "h.p.", "himachal pradesh"],
+                "madhya pradesh": ["mp", "m.p.", "madhya pradesh"],
+                "jammu and kashmir": [
+                  "j&k",
+                  "jk",
+                  "jammu & kashmir",
+                  "jammu and kashmir",
+                ],
+                "dadra and nagar haveli": ["dadra & nagar haveli", "dnhdd"],
+                "daman and diu": ["daman & diu", "dd"],
+              };
+
+              // Check variations
+              for (const [fullName, variations] of Object.entries(
+                stateVariations
+              )) {
+                if (
+                  stateName.includes(fullName) ||
+                  variations.some(
+                    (v) => apiState.includes(v) || stateName.includes(v)
+                  )
+                ) {
+                  return true;
+                }
+              }
+
+              return false;
+            });
+
+            if (foundState) {
+              setSelectedBranchState(foundState.isoCode);
+
+              // Set cities for the state
+              const stateCities = City.getCitiesOfState(
+                "IN",
+                foundState.isoCode
+              );
+              setBranchCities(stateCities);
+
+              // Find and set city - improved matching (same logic as company)
+              const foundCity = stateCities.find((c) => {
+                const cityName = c.name.toLowerCase().trim();
+                const apiCity = city.toLowerCase().trim();
+
+                // Exact match
+                if (cityName === apiCity) return true;
+
+                // Contains match (both ways)
+                if (cityName.includes(apiCity) || apiCity.includes(cityName))
+                  return true;
+
+                // Remove common suffixes/prefixes for better matching
+                const cleanCity = apiCity
+                  .replace(/\s+(city|town|rural|urban)$/i, "")
+                  .trim();
+                const cleanCityName = cityName
+                  .replace(/\s+(city|town|rural|urban)$/i, "")
+                  .trim();
+
+                if (cleanCityName === cleanCity) return true;
+                if (
+                  cleanCityName.includes(cleanCity) ||
+                  cleanCity.includes(cleanCityName)
+                )
+                  return true;
+
+                return false;
+              });
+
+              if (foundCity) {
+                setSelectedBranchCity(foundCity.name);
+              } else {
+                // If city not found in the list, use the API response directly
+                setSelectedBranchCity(city);
+              }
+            }
+
+            // Clear any previous errors
+            setBranchPincodeError("");
+          }
+
+          // Show success message
+          toast.success(`Location auto-filled for pincode ${pincode}`);
+        } else {
+          // Pincode not found
+          const errorMsg = `No location data found for pincode ${pincode}`;
+          if (isCompany) {
+            setCompanyPincodeError(errorMsg);
+          } else {
+            setBranchPincodeError(errorMsg);
           }
         }
       } catch (error) {
-        console.log("No location data found for pincode:", pincode);
+        console.log("Error fetching pincode data:", error);
+
+        // Fallback to basic validation
+        if (!/^\d{6}$/.test(pincode)) {
+          const errorMsg = "Please enter a valid 6-digit pincode";
+          if (isCompany) {
+            setCompanyPincodeError(errorMsg);
+          } else {
+            setBranchPincodeError(errorMsg);
+          }
+        } else {
+          const errorMsg =
+            "Unable to fetch location data. Please fill manually.";
+          if (isCompany) {
+            setCompanyPincodeError(errorMsg);
+          } else {
+            setBranchPincodeError(errorMsg);
+          }
+        }
+      }
+    } else if (pincode.length > 0 && pincode.length < 6) {
+      // Clear errors for incomplete pincode
+      if (isCompany) {
+        setCompanyPincodeError("");
+      } else {
+        setBranchPincodeError("");
       }
     }
   };
@@ -748,148 +1094,24 @@ setcmpchangerendor(!cmpchangerendor)
   };
 
   // Handle manual pincode input with validation
-  const handleManualPincodeInput = (
+  const handleManualPincodeInput = async (
     pincode: string,
     isCompany: boolean = true
   ) => {
-    const selectedCity = isCompany ? selectedCompanyCity : selectedBranchCity;
-
-    // Validate instantly as user types
-    if (pincode.length > 0) {
-      if (!selectedCity) {
-        // Show error if no city is selected
-        const errorMsg = "Please select a city first";
+    if (pincode.length === 6) {
+      // Automatically trigger the pincode change handler for 6-digit pincodes
+      await handlePincodeChange(pincode, isCompany);
+    } else if (pincode.length > 0 && pincode.length < 6) {
+      // For incomplete pincodes, just validate format
+      if (!/^\d+$/.test(pincode)) {
+        const errorMsg = "Pincode should contain only numbers";
         if (isCompany) {
           setCompanyPincodeError(errorMsg);
         } else {
           setBranchPincodeError(errorMsg);
         }
-        return;
-      }
-
-      // For complete pincodes (6 digits), validate fully
-      if (pincode.length === 6) {
-        console.log("Starting pincode validation for:", {
-          pincode,
-          selectedCity,
-        });
-
-        // Test the searchByPincode function
-        let locationData;
-        try {
-          locationData = safeSearchByPincode(pincode);
-          console.log("searchByPincode success:", locationData);
-        } catch (error) {
-          console.error("searchByPincode error:", error);
-
-          // Fallback validation - at least check format
-          if (!/^\d{6}$/.test(pincode)) {
-            const errorMsg = "Please enter a valid 6-digit pincode";
-            if (isCompany) {
-              setCompanyPincodeError(errorMsg);
-            } else {
-              setBranchPincodeError(errorMsg);
-            }
-          } else {
-            // Accept valid format since package validation failed
-            console.log("Package validation failed, accepting valid format");
-            if (isCompany) {
-              setCompanyPincodeError("");
-            } else {
-              setBranchPincodeError("");
-            }
-          }
-          return;
-        }
-
-        // Handle null response from safe function
-        if (!locationData) {
-          // Package failed, do basic format validation
-          if (!/^\d{6}$/.test(pincode)) {
-            const errorMsg = "Please enter a valid 6-digit pincode";
-            if (isCompany) {
-              setCompanyPincodeError(errorMsg);
-            } else {
-              setBranchPincodeError(errorMsg);
-            }
-          } else {
-            // Accept valid format since package validation failed
-            if (isCompany) {
-              setCompanyPincodeError("");
-            } else {
-              setBranchPincodeError("");
-            }
-          }
-          return;
-        }
-
-        console.log("Pincode search result:", {
-          pincode,
-          selectedCity,
-          locationData,
-          type: typeof locationData,
-        });
-
-        if (!locationData || locationData.length === 0) {
-          // Pincode not found
-          const errorMsg = `Pincode ${pincode} not found`;
-          console.log("Pincode not found:", pincode);
-          if (isCompany) {
-            setCompanyPincodeError(errorMsg);
-          } else {
-            setBranchPincodeError(errorMsg);
-          }
-          return;
-        }
-
-        // Check if pincode belongs to selected city
-        const isValid = locationData.some((location) => {
-          const matches =
-            location.circle?.toLowerCase() === selectedCity.toLowerCase() ||
-            location.area?.toLowerCase() === selectedCity.toLowerCase() ||
-            location.district?.toLowerCase() === selectedCity.toLowerCase() ||
-            location.taluk?.toLowerCase() === selectedCity.toLowerCase() ||
-            location.circle
-              ?.toLowerCase()
-              .includes(selectedCity.toLowerCase()) ||
-            location.area?.toLowerCase().includes(selectedCity.toLowerCase());
-
-          console.log("Location match check:", {
-            location: location,
-            selectedCity: selectedCity,
-            matches: matches,
-            circle: location.circle,
-            area: location.area,
-            district: location.district,
-            taluk: location.taluk,
-          });
-
-          return matches;
-        });
-
-        console.log("Final validation result:", {
-          pincode,
-          selectedCity,
-          isValid,
-        });
-
-        if (!isValid) {
-          const errorMsg = `Pincode ${pincode} does not belong to ${selectedCity}`;
-          if (isCompany) {
-            setCompanyPincodeError(errorMsg);
-          } else {
-            setBranchPincodeError(errorMsg);
-          }
-        } else {
-          // Valid pincode
-          if (isCompany) {
-            setCompanyPincodeError("");
-          } else {
-            setBranchPincodeError("");
-          }
-        }
       } else {
-        // For incomplete pincodes, clear validation errors but keep city selection error
+        // Clear errors for valid partial input
         if (isCompany) {
           setCompanyPincodeError("");
         } else {
@@ -919,6 +1141,8 @@ setcmpchangerendor(!cmpchangerendor)
     setSelectedBranchState("");
     setSelectedCompanyCity("");
     setSelectedBranchCity("");
+    setSelectedCompanyDistrict("");
+    setSelectedBranchDistrict("");
     setCompanyStates([]);
     setCompanyCities([]);
     // Keep Indian states loaded for branches
@@ -964,6 +1188,8 @@ setcmpchangerendor(!cmpchangerendor)
     setAutoCalculateLoanTenure("no");
     setEnableFixedDepositManagement("no");
     setAutoCalculateLoanTenureForFD("no");
+
+    console.log("Form data reset"); // Debug log
   };
 
   // Handle company name change to auto-fill mailing name
@@ -1038,6 +1264,10 @@ setcmpchangerendor(!cmpchangerendor)
         const countryRaw = pickField(item, ["country", "Country"], "");
         const stateRaw = pickField(item, ["state", "State"], "");
         const cityRaw = pickField(item, ["city", "City"], "");
+        const districtRaw = pickField(item, ["district", "District"], "");
+
+        setSelectedCompanyDistrict(districtRaw);
+
         const cIso = resolveCountryIso(countries, countryRaw);
         setSelectedCompanyCountry(cIso);
 
@@ -1064,6 +1294,13 @@ setcmpchangerendor(!cmpchangerendor)
       try {
         const stateRaw = pickField(item, ["state", "State", "branchState"], "");
         const cityRaw = pickField(item, ["city", "City", "branchCity"], "");
+        const districtRaw = pickField(
+          item,
+          ["district", "District", "branchDistrict"],
+          ""
+        );
+
+        setSelectedBranchDistrict(districtRaw);
 
         // Default to India for branches
         const st = State.getStatesOfCountry("IN");
@@ -1097,6 +1334,10 @@ setcmpchangerendor(!cmpchangerendor)
         const countryRaw = pickField(item, ["country", "Country"], "");
         const stateRaw = pickField(item, ["state", "State"], "");
         const cityRaw = pickField(item, ["city", "City"], "");
+        const districtRaw = pickField(item, ["district", "District"], "");
+
+        setSelectedCompanyDistrict(districtRaw);
+
         const cIso = resolveCountryIso(countries, countryRaw);
         setSelectedCompanyCountry(cIso);
 
@@ -1115,6 +1356,13 @@ setcmpchangerendor(!cmpchangerendor)
       } else {
         const stateRaw = pickField(item, ["state", "State", "branchState"], "");
         const cityRaw = pickField(item, ["city", "City", "branchCity"], "");
+        const districtRaw = pickField(
+          item,
+          ["district", "District", "branchDistrict"],
+          ""
+        );
+
+        setSelectedBranchDistrict(districtRaw);
 
         // Default to India for branches
         const st = State.getStatesOfCountry("IN");
@@ -1216,7 +1464,10 @@ setcmpchangerendor(!cmpchangerendor)
             companyName: formData.get("companyName") as string,
             mailingName: formData.get("mailingName") as string,
             address: formData.get("address") as string,
-            district: (formData.get("district") as string) || "",
+            district:
+              selectedCompanyDistrict ||
+              (formData.get("district") as string) ||
+              "",
             state: selectedCompanyState,
             country: selectedCompanyCountry,
             city: selectedCompanyCity,
@@ -1248,6 +1499,10 @@ setcmpchangerendor(!cmpchangerendor)
           const updatedData = {
             branchname: formData.get("branchname") as string,
             address: formData.get("address") as string,
+            district:
+              selectedBranchDistrict ||
+              (formData.get("district") as string) ||
+              "",
             state: selectedBranchState,
             city: selectedBranchCity,
             branchPincode:
@@ -1281,7 +1536,10 @@ setcmpchangerendor(!cmpchangerendor)
             companyName: formData.get("companyName") as string,
             mailingName: formData.get("mailingName") as string,
             address: formData.get("address") as string,
-            district: (formData.get("district") as string) || "",
+            district:
+              selectedCompanyDistrict ||
+              (formData.get("district") as string) ||
+              "",
             state: selectedCompanyState,
             country: selectedCompanyCountry,
             city: selectedCompanyCity,
@@ -1314,6 +1572,10 @@ setcmpchangerendor(!cmpchangerendor)
           const branchData = {
             branchname: formData.get("branchname") as string,
             address: formData.get("address") as string,
+            district:
+              selectedBranchDistrict ||
+              (formData.get("district") as string) ||
+              "",
             state: selectedBranchState,
             city: selectedBranchCity,
             branchPincode: (formData.get("branchPincode") as string) || "",
@@ -1913,7 +2175,14 @@ setcmpchangerendor(!cmpchangerendor)
                                     id="district"
                                     name="district"
                                     className="h-6 text-xs flex-1"
-                                    defaultValue={activeItem?.district || ""}
+                                    value={
+                                      selectedCompanyDistrict ||
+                                      activeItem?.district ||
+                                      ""
+                                    }
+                                    onChange={(e) =>
+                                      setSelectedCompanyDistrict(e.target.value)
+                                    }
                                     ref={(el) => setFieldRef("district", el)}
                                     onKeyDown={(e) =>
                                       handleKeyDown(e, "district")
@@ -3298,7 +3567,14 @@ setcmpchangerendor(!cmpchangerendor)
                                 id="district"
                                 name="district"
                                 className="h-6 text-xs flex-1"
-                                defaultValue={activeItem?.district || ""}
+                                value={
+                                  selectedBranchDistrict ||
+                                  activeItem?.district ||
+                                  ""
+                                }
+                                onChange={(e) =>
+                                  setSelectedBranchDistrict(e.target.value)
+                                }
                                 ref={(el) => setFieldRef("district", el)}
                                 onKeyDown={(e) => handleKeyDown(e, "district")}
                               />
