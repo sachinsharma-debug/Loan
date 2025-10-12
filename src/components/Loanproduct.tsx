@@ -43,8 +43,8 @@ import {
 } from "@/api/loanProductService";
 import type { LoanProduct } from "@/types";
 import { toast } from "react-toastify";
-import { useSelector, useDispatch } from "react-redux";
-import { setcompanyid } from "../redux/storeSlice";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 
 // Utility to get unique typeOfLoan and subType options from loanproducts
 export function getLoanTypeOptions(loanproducts: LoanProduct[]) {
@@ -68,16 +68,12 @@ export function getLoanSubTypeOptions(
 }
 
 const LoanProductComponent: React.FC = () => {
+  const companyid = useSelector((state: RootState) => state.Store.companyid);
+  const [cmpchangerendor, setcmpchangerendor] = useState(true);
 
-
-  const companyid = useSelector((state) => state?.Store.companyid)
-  const dispatch = useDispatch()
-  const [cmpchangerendor,setcmpchangerendor]=useState(true)
-
-
-useEffect(()=>{
-setcmpchangerendor(!cmpchangerendor)
-},[companyid])
+  useEffect(() => {
+    setcmpchangerendor(!cmpchangerendor);
+  }, [companyid]);
   // Data + UI state
   const [loanproducts, setLoanproducts] = useState<LoanProduct[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -150,13 +146,16 @@ setcmpchangerendor(!cmpchangerendor)
   }>({ isValid: true, message: "" });
 
   // Ledger fields
-  const [loanDisbursementLedger, setLoanDisbursementLedger] = useState<string>("");
+  const [loanDisbursementLedger, setLoanDisbursementLedger] =
+    useState<string>("");
   const [loanInterestLedger, setLoanInterestLedger] = useState<string>("");
 
   // Applicable Charges
   const [isChargesChecked, setIsChargesChecked] = useState<boolean>(false);
-  const [isChargesHistoryDialogOpen, setIsChargesHistoryDialogOpen] = useState<boolean>(false);
-  const [isChargesHistoryViewOnly, setIsChargesHistoryViewOnly] = useState<boolean>(false);
+  const [isChargesHistoryDialogOpen, setIsChargesHistoryDialogOpen] =
+    useState<boolean>(false);
+  const [isChargesHistoryViewOnly, setIsChargesHistoryViewOnly] =
+    useState<boolean>(false);
   const [isChargesDialogOpen, setIsChargesDialogOpen] =
     useState<boolean>(false);
   const [chargesData, setChargesData] = useState<
@@ -228,12 +227,22 @@ setcmpchangerendor(!cmpchangerendor)
       !lastRow.applicableAs.trim() ||
       !lastRow.charges.trim()
     ) {
-      toast.warning("Please fill all fields in the current row before adding a new row");
+      toast.warning(
+        "Please fill all fields in the current row before adding a new row"
+      );
       // Focus on the first empty field in the last row
-      const fields = ["ledgerName", "group", "appliedOn", "applicableAs", "charges"];
+      const fields = [
+        "ledgerName",
+        "group",
+        "appliedOn",
+        "applicableAs",
+        "charges",
+      ];
       for (const field of fields) {
         if (!lastRow[field as keyof typeof lastRow].trim()) {
-          const input = document.getElementById(`charges-${chargesData.length - 1}-${field}`);
+          const input = document.getElementById(
+            `charges-${chargesData.length - 1}-${field}`
+          );
           input?.focus();
           break;
         }
@@ -298,16 +307,22 @@ setcmpchangerendor(!cmpchangerendor)
           !currentRow.applicableAs.trim() ||
           !currentRow.charges.trim()
         ) {
-          toast.warning("Please fill all fields in the current row before proceeding to next line");
+          toast.warning(
+            "Please fill all fields in the current row before proceeding to next line"
+          );
           // Focus on the first empty field in current row
-          const emptyField = fields.find(field => !currentRow[field as keyof typeof currentRow].trim());
+          const emptyField = fields.find(
+            (field) => !currentRow[field as keyof typeof currentRow].trim()
+          );
           if (emptyField) {
-            const input = document.getElementById(`charges-${rowIndex}-${emptyField}`);
+            const input = document.getElementById(
+              `charges-${rowIndex}-${emptyField}`
+            );
             input?.focus();
           }
           return;
         }
-        
+
         // All fields filled, add new row and focus first field of new row
         handleAddChargesRow();
         setTimeout(() => {
@@ -523,6 +538,11 @@ setcmpchangerendor(!cmpchangerendor)
           .filter((h) => (h.date || "").trim())
           .map((h) => h.date),
         isActive: true,
+        // Missing fields from form:
+        companyId: (formData.get("companyId") as string) || "",
+        masterId: (formData.get("masterId") as string) || "",
+        alterId: (formData.get("alterId") as string) || "",
+        interestMethod: (formData.get("interestMethod") as string) || "",
       };
 
       const createdProduct = await createLoanProduct(newProduct);
@@ -700,7 +720,13 @@ setcmpchangerendor(!cmpchangerendor)
       setLoanproducts((prev) =>
         prev.map((item) =>
           getEntityId(item) === getEntityId(editingType)
-            ? { ...item, ...updatedProduct }
+            ? ({
+                ...item,
+                ...updatedProduct,
+                chargesData: updatedProduct.chargesData,
+                interestHistory: updatedProduct.interestHistory,
+                eligibilityHistory: updatedProduct.eligibilityHistory,
+              } as LoanProduct)
             : item
         )
       );
@@ -783,12 +809,12 @@ setcmpchangerendor(!cmpchangerendor)
     // Populate ledger fields from existing data
     setLoanDisbursementLedger(type.loanDisbursementLedger || "");
     setLoanInterestLedger(type.loanInterestLedger || "");
-    
+
     // Populate charges data from existing data
     if (type.chargesData && Array.isArray(type.chargesData)) {
       setChargesData(type.chargesData);
     }
-    
+
     // Prefill selects/flags for add dialog
     setAnnualRateApplicable((type.annualRateOfInterestApplicable as any) || "");
     setEligibilitySetup(((type.totalWeightage as any) || "") as any);
@@ -1333,14 +1359,35 @@ setcmpchangerendor(!cmpchangerendor)
                               // If the last entry has data, add a new blank entry
                               if (
                                 lastEntry &&
-                                (lastEntry.ledgerName.trim() || lastEntry.group.trim() || lastEntry.appliedOn.trim() || lastEntry.applicableAs.trim() || lastEntry.charges.trim())
+                                (lastEntry.ledgerName.trim() ||
+                                  lastEntry.group.trim() ||
+                                  lastEntry.appliedOn.trim() ||
+                                  lastEntry.applicableAs.trim() ||
+                                  lastEntry.charges.trim())
                               ) {
-                                return [...prev, { ledgerName: "", group: "", appliedOn: "", applicableAs: "", charges: "" }];
+                                return [
+                                  ...prev,
+                                  {
+                                    ledgerName: "",
+                                    group: "",
+                                    appliedOn: "",
+                                    applicableAs: "",
+                                    charges: "",
+                                  },
+                                ];
                               }
                               // If charges data is empty or last entry is blank, keep as is
                               return prev.length > 0
                                 ? prev
-                                : [{ ledgerName: "", group: "", appliedOn: "", applicableAs: "", charges: "" }];
+                                : [
+                                    {
+                                      ledgerName: "",
+                                      group: "",
+                                      appliedOn: "",
+                                      applicableAs: "",
+                                      charges: "",
+                                    },
+                                  ];
                             });
                             setIsChargesHistoryViewOnly(false);
                             setIsChargesHistoryDialogOpen(true);
@@ -2229,7 +2276,9 @@ setcmpchangerendor(!cmpchangerendor)
         >
           <DialogHeader>
             <DialogTitle>
-              {isChargesHistoryViewOnly ? "Charges History" : "Applicable Charges Setup"}
+              {isChargesHistoryViewOnly
+                ? "Charges History"
+                : "Applicable Charges Setup"}
             </DialogTitle>
           </DialogHeader>
 
@@ -2275,7 +2324,9 @@ setcmpchangerendor(!cmpchangerendor)
             <div className="space-y-3">
               {/* Ledger Fields Section */}
               <div className="space-y-2 p-4 border rounded-md bg-gray-50">
-                <h4 className="text-sm font-semibold text-gray-700">Ledger Configuration</h4>
+                <h4 className="text-sm font-semibold text-gray-700">
+                  Ledger Configuration
+                </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <Label className="text-xs w-32 text-right">
@@ -2285,11 +2336,15 @@ setcmpchangerendor(!cmpchangerendor)
                       id="charges_loanDisbursementLedger"
                       className="h-6 text-xs flex-1"
                       value={loanDisbursementLedger}
-                      onChange={(e) => setLoanDisbursementLedger(e.target.value)}
+                      onChange={(e) =>
+                        setLoanDisbursementLedger(e.target.value)
+                      }
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          const next = document.getElementById("charges_loanInterestLedger");
+                          const next = document.getElementById(
+                            "charges_loanInterestLedger"
+                          );
                           next?.focus();
                         }
                       }}
@@ -2309,7 +2364,9 @@ setcmpchangerendor(!cmpchangerendor)
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          const next = document.getElementById("charges-0-ledgerName");
+                          const next = document.getElementById(
+                            "charges-0-ledgerName"
+                          );
                           next?.focus();
                         }
                       }}
@@ -2370,11 +2427,7 @@ setcmpchangerendor(!cmpchangerendor)
                               )
                             }
                             onKeyDown={(e) =>
-                              handleChargesKeyDown(
-                                e,
-                                index,
-                                "ledgerName"
-                              )
+                              handleChargesKeyDown(e, index, "ledgerName")
                             }
                             placeholder="Ledger name"
                             required
@@ -2393,11 +2446,7 @@ setcmpchangerendor(!cmpchangerendor)
                               )
                             }
                             onKeyDown={(e) =>
-                              handleChargesKeyDown(
-                                e,
-                                index,
-                                "group"
-                              )
+                              handleChargesKeyDown(e, index, "group")
                             }
                             placeholder="Group"
                             required
@@ -2407,11 +2456,7 @@ setcmpchangerendor(!cmpchangerendor)
                           <Select
                             value={row.appliedOn}
                             onValueChange={(val) => {
-                              handleChargesFieldChange(
-                                index,
-                                "appliedOn",
-                                val
-                              );
+                              handleChargesFieldChange(index, "appliedOn", val);
                               // Auto-focus next field after selection
                               setTimeout(() => {
                                 const nextInput = document.getElementById(
@@ -2512,10 +2557,7 @@ setcmpchangerendor(!cmpchangerendor)
                               >
                                 % of PR Amount
                               </SelectItem>
-                              <SelectItem
-                                value="INR"
-                                className="text-xs py-1"
-                              >
+                              <SelectItem value="INR" className="text-xs py-1">
                                 INR
                               </SelectItem>
                             </SelectContent>
@@ -2534,11 +2576,7 @@ setcmpchangerendor(!cmpchangerendor)
                               )
                             }
                             onKeyDown={(e) =>
-                              handleChargesKeyDown(
-                                e,
-                                index,
-                                "charges"
-                              )
+                              handleChargesKeyDown(e, index, "charges")
                             }
                             placeholder="Amount"
                             required
@@ -2620,33 +2658,42 @@ setcmpchangerendor(!cmpchangerendor)
                       // Validate ledger fields first
                       if (!loanDisbursementLedger.trim()) {
                         toast.warning("Please enter Loan Disbursement Ledger");
-                        const field = document.getElementById("charges_loanDisbursementLedger");
+                        const field = document.getElementById(
+                          "charges_loanDisbursementLedger"
+                        );
                         field?.focus();
                         return;
                       }
                       if (!loanInterestLedger.trim()) {
                         toast.warning("Please enter Loan Interest Ledger");
-                        const field = document.getElementById("charges_loanInterestLedger");
+                        const field = document.getElementById(
+                          "charges_loanInterestLedger"
+                        );
                         field?.focus();
                         return;
                       }
-                      
+
                       // Validate that at least one charge entry has all fields filled
-                      const hasValidEntry = chargesData.some(row => 
-                        row.ledgerName.trim() && 
-                        row.group.trim() && 
-                        row.appliedOn.trim() && 
-                        row.applicableAs.trim() && 
-                        row.charges.trim()
+                      const hasValidEntry = chargesData.some(
+                        (row) =>
+                          row.ledgerName.trim() &&
+                          row.group.trim() &&
+                          row.appliedOn.trim() &&
+                          row.applicableAs.trim() &&
+                          row.charges.trim()
                       );
-                      
+
                       if (!hasValidEntry) {
-                        toast.warning("Please fill all fields in at least one charges row");
-                        const firstEmptyField = document.getElementById("charges-0-ledgerName");
+                        toast.warning(
+                          "Please fill all fields in at least one charges row"
+                        );
+                        const firstEmptyField = document.getElementById(
+                          "charges-0-ledgerName"
+                        );
                         firstEmptyField?.focus();
                         return;
                       }
-                      
+
                       setIsChargesHistoryDialogOpen(false);
                       // Navigate to next field
                       setTimeout(() => {

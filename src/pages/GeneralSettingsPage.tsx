@@ -26,10 +26,6 @@ const GeneralSettingsPage = () => {
       label: "Email Schedule Event Status Report",
       path: "/email-schedule-event-status",
     },
-    {
-      label: "Transaction Type",
-      path: "/transaction-type",
-    },
   ];
 
   const handleItemClick = (path: string) => {

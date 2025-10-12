@@ -6,11 +6,12 @@ import { Company } from "@/types";
 import { gettoken } from "@/api/config";
 
 import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "@/redux/store";
 import { setcompanyid } from "../redux/storeSlice";
 
 const Header = () => {
   const navigate = useNavigate();
-  const companyid = useSelector((state) => state?.Store.companyid);
+  const companyid = useSelector((state: RootState) => state.Store.companyid);
   const dispatch = useDispatch();
 
   const {

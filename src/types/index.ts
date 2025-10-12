@@ -277,6 +277,20 @@ export interface LoanProduct {
     incomeOfBorrower: string;
   }[];
   isActive?: boolean;
+  loanDisbursementLedger?: string;
+  loanInterestLedger?: string;
+  // In UI we manage multiple charges rows, so this is an array
+  chargesData?: {
+    ledgerName: string;
+    group: string;
+    appliedOn: string;
+    applicableAs: string;
+    charges: string;
+  }[];
+  // Backend identity fields occasionally included in payloads
+  companyId?: string;
+  masterId?: string;
+  alterId?: string;
 }
 
 export interface KYC {

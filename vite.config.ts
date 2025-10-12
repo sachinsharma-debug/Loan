@@ -5,9 +5,16 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Use a cache directory outside node_modules to avoid EPERM on Windows/OneDrive
+  cacheDir: path.resolve(__dirname, ".vite"),
   server: {
     host: "::",
     port: 8080,
+    // Polling reduces file lock issues with network/OneDrive folders on Windows
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(
     Boolean
