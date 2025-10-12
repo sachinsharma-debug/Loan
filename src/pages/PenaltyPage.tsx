@@ -3,11 +3,24 @@ import PenaltyComponent from "@/components/Penalty";
 import { Penalty } from "@/types";
 import { penaltyService } from "@/api/penaltyService";
 
+
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
+
+
 const PenaltyPage: React.FC = () => {
   const [penalties, setPenalties] = useState<Penalty[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+  const [cmpchangerendor,setcmpchangerendor]=useState(true)
+
+
+useEffect(()=>{
+setcmpchangerendor(!cmpchangerendor)
+},[companyid])
   // Fetch penalties on mount
   useEffect(() => {
     let mounted = true;
@@ -37,7 +50,11 @@ const PenaltyPage: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [cmpchangerendor]);
+
+
+
+
 
   const fetchPenalties = async () => {
     setLoading(true);

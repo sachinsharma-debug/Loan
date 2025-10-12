@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Eye, Edit, Plus, Trash2, Trash } from "lucide-react";
 import { KYC } from "@/types";
+import {API} from "../api/config";
 
 type KycProps = {
   kycs: KYC[];
@@ -50,16 +51,39 @@ const KycComponent = ({
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<KYC | null>(null);
   const [viewingItem, setViewingItem] = useState<KYC | null>(null);
+  const [documentCategory,setDocumentCategory]=useState([]);
+
+
+  const [documentCategorylist,setDocumentCategorylist]=useState([]);
+
+
+
+
+
+  useEffect(()=>{
+   
+    const fetchDocumentCategories = async () => {
+      try {
+          let res=await API.getMethod('/get_master/documentcategory');
+          if(res && res.data.data){
+            setDocumentCategorylist(res.data.data);
+          } 
+           
+      }
+      catch(e){
+          setDocumentCategorylist([])
+      }
+    }
+    fetchDocumentCategories()
+
+
+
+
+  },[])
 
   // Single document state for Add KYC dialog
   const [document, setDocument] = useState("");
-  const [documentCategory, setDocumentCategory] = useState<
-    | "Identity Proof"
-    | "Address Proof"
-    | "Income Proof"
-    | "Business Documents"
-    | "Other Documents"
-  >("Identity Proof");
+
   const [noOfCopy, setNoOfCopy] = useState(1);
   const [mandatory, setMandatory] = useState<"yes" | "no">("yes");
   const [requirementType, setRequirementType] = useState<
@@ -130,6 +154,7 @@ const KycComponent = ({
     };
 
     try {
+     
       await onAddKYC(kycData);
       toast.success("Document added successfully");
       setIsAddDialogOpen(false);
@@ -139,7 +164,6 @@ const KycComponent = ({
       setNoOfCopy(1);
       setMandatory("yes");
       setRequirementType("Original");
-      setDocumentCategory("Identity Proof");
     } catch (error) {
       console.error("Failed to add document:", error);
       toast.error(
@@ -148,6 +172,7 @@ const KycComponent = ({
     }
   };
 
+  console.log(kycs,"llll")
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -205,21 +230,7 @@ const KycComponent = ({
                             position="popper"
                             className="max-h-64 overflow-y-auto w-[var(--radix-select-trigger-width)]"
                           >
-                            <SelectItem value="Identity Proof">
-                              Identity Proof
-                            </SelectItem>
-                            <SelectItem value="Address Proof">
-                              Address Proof
-                            </SelectItem>
-                            <SelectItem value="Income Proof">
-                              Income Proof
-                            </SelectItem>
-                            <SelectItem value="Business Documents">
-                              Business Documents
-                            </SelectItem>
-                            <SelectItem value="Other Documents">
-                              Other Documents
-                            </SelectItem>
+                           {documentCategorylist?.map((val)=><SelectItem value={val._id}>{val.name}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
@@ -342,7 +353,7 @@ const KycComponent = ({
                     <TableCell className="font-medium">
                       {item.document}
                     </TableCell>
-                    <TableCell>{item.documentCategory}</TableCell>
+                    <TableCell>{documentCategorylist.filter((val)=>val._id==item.documentCategory)?.[0]?.name || ""}</TableCell>
                     <TableCell>{item.noOfCopy}</TableCell>
                     <TableCell>
                       {item.mandatory === "yes" ? "Yes" : "No"}
@@ -410,27 +421,15 @@ const KycComponent = ({
                   <Label htmlFor="documentCategory">Document Category</Label>
                   <Select
                     name="documentCategory"
-                    defaultValue={
-                      editingItem.documentCategory || "Identity Proof"
-                    }
-                  >
+                    value={editingItem.documentCategory}
+                  >   
+                    
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Identity Proof">
-                        Identity Proof
-                      </SelectItem>
-                      <SelectItem value="Address Proof">
-                        Address Proof
-                      </SelectItem>
-                      <SelectItem value="Income Proof">Income Proof</SelectItem>
-                      <SelectItem value="Business Documents">
-                        Business Documents
-                      </SelectItem>
-                      <SelectItem value="Other Documents">
-                        Other Documents
-                      </SelectItem>
+                      {documentCategorylist?.map((val)=><SelectItem value={val._id}>{val.name}</SelectItem>)}
+                     
                     </SelectContent>
                   </Select>
                 </div>
@@ -504,7 +503,8 @@ const KycComponent = ({
                 <div>
                   <Label className="font-medium">Document Category:</Label>
                   <p className="text-gray-700">
-                    {viewingItem.documentCategory}
+                    {documentCategorylist.filter((val)=>val._id==viewingItem.documentCategory)?.[0]?.name || ""}
+                    
                   </p>
                 </div>
                 <div>

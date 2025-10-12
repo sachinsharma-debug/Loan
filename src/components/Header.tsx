@@ -3,9 +3,17 @@ import "./Header.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Company } from "@/types";
+import { gettoken } from "@/api/config";
+
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
 
 const Header = () => {
   const navigate = useNavigate();
+  const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+
+
   const {
     user,
     selectedCompany,
@@ -43,11 +51,9 @@ const Header = () => {
         setShowCompanyDropdown(false);
       }
     };
-
     if (showCompanyDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -66,7 +72,36 @@ const Header = () => {
     navigate("/settings");
   };
 
+  const setcompanyfunc = async () => {
+      //  console.log(selectedCompany)
+       fetch(`https://api-finance.prudent360.in/api/v1/setcompanyid`,{   method: "POST",         
+       headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${gettoken()}`
+        },
+        body: JSON.stringify({ companyid: selectedCompany?.id }),
+      } ).then(async (response) => {    
+        if (response.ok) {
+          dispatch(setcompanyid(selectedCompany?.id))
+          let data = await response.json();
+          console.log(data,"set company api response")
+        }
+      }).catch((error) => {
+        console.error("Error fetching user:", error);
+        return false
+      });
+
+  }
+
+  
+
+  useEffect(()=>{
+   setcompanyfunc()
+  },[selectedCompany])
+
   const handleCompanySelect = (company: Company) => {
+
+    setcompanyfunc()
     setSelectedCompany(company);
     setShowCompanyDropdown(false);
   };
@@ -130,7 +165,7 @@ const Header = () => {
       </header>
     );
   }
-
+console.log(isAdmin,hasMultipleCompanies,">>>>>>>>>>>>>mmmmm ")
   return (
     <header className="top-header">
       {/* <div className="left">

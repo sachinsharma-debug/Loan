@@ -1,10 +1,15 @@
 import type { LoanProduct } from "@/types";
-
+import { gettoken } from "./config";
 // Align base path with other API modules in this project
 const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
 export const getLoanProducts = async (): Promise<LoanProduct[]> => {
-  const response = await fetch(`${API_BASE_URL}/get_master/loanproduct`);
+  const response = await fetch(`${API_BASE_URL}/get_master/loanproduct`,{
+    method: "GET",headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${gettoken()}`
+        },
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch loan products");
   }
@@ -16,9 +21,10 @@ export const createLoanProduct = async (
 ): Promise<LoanProduct> => {
   const response = await fetch(`${API_BASE_URL}/create_master`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+  headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${gettoken()}`
+      },
     body: JSON.stringify({ tablename: "loanproduct", data: product }),
   });
 
@@ -36,8 +42,9 @@ export const updateLoanProduct = async (
   const response = await fetch(`${API_BASE_URL}/update_master/${id}`, {
     method: "PUT",
     headers: {
-      "Content-Type": "application/json",
-    },
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${gettoken()}`
+        },
     body: JSON.stringify({ tablename: "loanproduct", id, data: product }),
   });
 
@@ -52,7 +59,10 @@ export const deleteLoanProduct = async (id: string): Promise<void> => {
     `${API_BASE_URL}/delete_master/${id}/loanproduct`,
     {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: JSON.stringify({ tablename: "loanproduct", id }),
     }
   );

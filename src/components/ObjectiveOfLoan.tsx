@@ -23,6 +23,10 @@ import { Eye, Edit, Plus, Trash2 } from "lucide-react";
 import { objectiveOfLoanApi } from "@/api/objectiveOfLoanApi";
 import { toast } from "react-toastify";
 import { ObjectiveOfLoan } from "@/types";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
+
+
 
 // Remove props, use API instead
 
@@ -33,6 +37,9 @@ const ObjectiveOfLoanComponent = () => {
   const [currentItem, setCurrentItem] = useState<ObjectiveOfLoan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+  const [cmpchangerendor,setcmpchangerendor]=useState(true)
 
   // Fetch objectives from API
   useEffect(() => {
@@ -57,8 +64,10 @@ const ObjectiveOfLoanComponent = () => {
       }
     };
     loadObjectives();
-  }, []);
-
+  }, [cmpchangerendor]);
+useEffect(()=>{
+setcmpchangerendor(!cmpchangerendor)
+},[companyid])
   // Add objective via API utility
   const onAddObjective = async (data: { description: string }) => {
     setLoading(true);

@@ -43,6 +43,8 @@ import {
 } from "@/api/loanProductService";
 import type { LoanProduct } from "@/types";
 import { toast } from "react-toastify";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
 
 // Utility to get unique typeOfLoan and subType options from loanproducts
 export function getLoanTypeOptions(loanproducts: LoanProduct[]) {
@@ -66,6 +68,19 @@ export function getLoanSubTypeOptions(
 }
 
 const LoanProductComponent: React.FC = () => {
+
+
+  const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+  const [cmpchangerendor,setcmpchangerendor]=useState(true)
+
+
+useEffect(()=>{
+setcmpchangerendor(!cmpchangerendor)
+},[companyid])
+
+
+
   // Data + UI state
   const [loanproducts, setLoanproducts] = useState<LoanProduct[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -322,6 +337,7 @@ const LoanProductComponent: React.FC = () => {
     }
   };
 
+
   // Initial fetch
   useEffect(() => {
     (async () => {
@@ -340,7 +356,7 @@ const LoanProductComponent: React.FC = () => {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cmpchangerendor]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -685,6 +701,10 @@ const LoanProductComponent: React.FC = () => {
       </div>
     );
   }
+
+
+
+
 
   return (
     <div className="p-6 space-y-6">

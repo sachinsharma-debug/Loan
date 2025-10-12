@@ -2,12 +2,17 @@ import { useState, useCallback, useEffect } from "react";
 import KycComponent from "@/components/kyc";
 import { KYC } from "@/types";
 import { kycService } from "@/api/kycService";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
 
 const KycPage = () => {
   const [kycs, setKycs] = useState<KYC[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+  const [cmpchangerendor,setcmpchangerendor]=useState(true)
   const fetchKycs = useCallback(async () => {
     try {
       setLoading(true);
@@ -25,13 +30,15 @@ const KycPage = () => {
 
   useEffect(() => {
     fetchKycs();
-  }, [fetchKycs]);
+  }, [companyid]);
 
   const handleAddKYC = useCallback(async (data: Omit<KYC, "id">) => {
     try {
       setError(null);
+     
       const newItem = await kycService.create(data);
-      setKycs((prev) => [...prev, newItem]);
+      fetchKycs()
+      // setKycs((prev) => [...prev, newItem]);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to add KYC document"
@@ -45,9 +52,7 @@ const KycPage = () => {
       try {
         setError(null);
         const updatedItem = await kycService.update(id, data);
-        setKycs((prev) =>
-          prev.map((kyc) => (kyc.id === id ? updatedItem : kyc))
-        );
+       fetchKycs()
       } catch (error) {
         setError(
           error instanceof Error

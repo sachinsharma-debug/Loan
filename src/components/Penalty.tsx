@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { toast } from "react-toastify";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Eye, Edit, Plus, Trash2 } from "lucide-react";
 import { Penalty } from "@/types";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
+
+
+
 
 type PenaltyProps = {
   penalties: Penalty[];
@@ -47,6 +52,21 @@ const PenaltyComponent = ({
   onUpdatePenalty,
   onDeletePenalty,
 }: PenaltyProps) => {
+
+
+const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+  const [cmpchangerendor,setcmpchangerendor]=useState(true)
+console.log("companyid",companyid,cmpchangerendor)
+
+useEffect(()=>{
+setcmpchangerendor(!cmpchangerendor)
+},[companyid])
+
+
+
+
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"add" | "edit" | "view">("add");
   const [currentItem, setCurrentItem] = useState<Penalty | null>(null);

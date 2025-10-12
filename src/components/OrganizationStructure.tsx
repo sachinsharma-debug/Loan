@@ -43,6 +43,12 @@ import { createFormKeyDownHandler } from "@/lib/formNavigation";
 import { Textarea } from "./ui/textarea";
 import { Country, State, City } from "country-state-city";
 import { companyApi, branchApi } from "@/api/organisationstructure";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
+import {API} from "../api/config";
+
+
+
 // Note: You'll need to implement these APIs for complete functionality:
 // import { transactionApi } from "@/api/transaction";
 // import { masterApi } from "@/api/master";
@@ -145,7 +151,109 @@ const OrganizationStructure = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState({ companies: false, branches: false });
   const [error, setError] = useState({ companies: "", branches: "" });
+  const [loantype,setloantype]=useState([])
+const companyid = useSelector((state) => state?.Store.companyid)
+  const dispatch = useDispatch()
+  const [cmpchangerendor,setcmpchangerendor]=useState(true)
+  const [featureloandata,setfeatureloandata]=useState({
+   enableloanmanagement:"no",
+   applicableloantype:[],
+   enablerecurringdeposit:"no",
+   autocalculateloanrd:"no",
+   enablefixedloan:"no",
+   autocalculateloanfd:"no",
+   companyid:""
+})
+featureloandata.companyid=companyid
+const fetchfeature=async()=>{ 
+  let res=await API.getMethod('/get_master/feature')
+  if(res.data.data.length>0){
+    setfeatureloandata(res.data.data[0])
+  }
+  else{
+    setfeatureloandata({
+   enableloanmanagement:"no",
+   applicableloantype:[],
+   enablerecurringdeposit:"no",
+   autocalculateloanrd:"no",
+   enablefixedloan:"no",
+   autocalculateloanfd:"no",
+   companyid:""
+})
+  }
 
+}
+  useEffect(()=>{ 
+
+
+
+
+    const fetchloantype=async()=>{  
+      let res=await API.getMethod('/get_master/loantype')
+      console.log(res,"<<<<<<<<<<<<<<<,");
+
+      setloantype(res?.data?.data||[])
+    }
+    fetchloantype()
+
+    
+    fetchfeature()
+
+
+
+
+
+  },[companyid])
+
+
+
+
+  const savefeaturedata=async()=>{
+    
+    if(featureloandata._id){  
+      let __id=  featureloandata._id
+    delete featureloandata._id
+        let payload={
+      tablename:"feature",
+      data:{...featureloandata}
+    } 
+    
+ const res=await API.updateMethod('/update_master/'+__id,payload)
+      
+    if(res?.status==200){ 
+      toast.success("Feature updated successfully")
+      fetchfeature()
+    } else {
+      toast.error("Failed to update feature")
+    }
+
+  }
+  else {
+    let payload={
+      tablename:"feature",
+      data:{...featureloandata}
+    }
+     const   res=await API.postMethod('/create_master',payload)
+    if(res?.status==200){
+      toast.success("Feature added successfully")
+      fetchfeature()
+    } else {
+      toast.error("Failed to add feature")
+    }
+
+  }
+}
+
+
+
+
+
+
+
+
+useEffect(()=>{
+setcmpchangerendor(!cmpchangerendor)
+},[companyid])
   const [searchTerm, setSearchTerm] = useState("");
   const [branchSearchTerm, setBranchSearchTerm] = useState("");
   // Additional base currency details toggle for Company form
@@ -170,6 +278,7 @@ const OrganizationStructure = () => {
     "yes" | "no"
   >("no");
   const [selectedLoanTypes, setSelectedLoanTypes] = useState<string[]>([]);
+  console.log(selectedLoanTypes,"selectedLoanTypesselectedLoanTypes");
   const [
     enableRecurringDepositManagement,
     setEnableRecurringDepositManagement,
@@ -421,7 +530,7 @@ const OrganizationStructure = () => {
     // Initialize branch states with Indian states by default
     const indianStates = State.getStatesOfCountry("IN");
     setBranchStates(indianStates);
-  }, []);
+  }, [cmpchangerendor]);
 
   // API functions
   const fetchCompanies = async () => {
@@ -1339,6 +1448,9 @@ const OrganizationStructure = () => {
     // If no existing data or new company, allow change
     setBookBeginningDate(newDate);
   };
+
+
+  console.log(featureloandata,"dskfjkdjfk sdf")
 
   // Confirm financial year change and reset data
   const confirmFinancialYearChange = async () => {
@@ -2705,9 +2817,10 @@ const OrganizationStructure = () => {
                         <input
                           type="checkbox"
                           id="enableLoanManagement"
-                          checked={enableLoanManagement === "yes"}
+                          checked={featureloandata.enableloanmanagement=== "yes"}
                           onChange={(e) => {
                             const value = e.target.checked ? "yes" : "no";
+                            featureloandata.enableloanmanagement=value
                             setEnableLoanManagement(value);
                             if (value === "no") {
                               setSelectedLoanTypes([]);
@@ -2717,14 +2830,14 @@ const OrganizationStructure = () => {
                         />
                         <div
                           className={`w-11 h-6 rounded-full peer transition-colors duration-200 ease-in-out ${
-                            enableLoanManagement === "yes"
+                            featureloandata.enableloanmanagement=== "yes"
                               ? "bg-blue-600"
                               : "bg-gray-200"
                           } relative`}
                         >
                           <div
                             className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out ${
-                              enableLoanManagement === "yes"
+                              featureloandata.enableloanmanagement === "yes"
                                 ? "translate-x-5"
                                 : "translate-x-0"
                             }`}
@@ -2736,53 +2849,44 @@ const OrganizationStructure = () => {
                   </div>
 
                   {/* Loan Types - Show only when Enable Loan Management is Yes */}
-                  {enableLoanManagement === "yes" && (
+                  {featureloandata.enableloanmanagement === "yes" && (
                     <div className="ml-8 mt-2">
                       <Label className="text-xs font-medium mb-2 block">
                         Applicable Loan Types:
                       </Label>
                       <div className="grid grid-cols-2 gap-2 mt-2">
-                        {[
-                          "Personal Loan",
-                          "Home Loan",
-                          "Education Loan",
-                          "Vehicle Loan",
-                          "Gold Loan",
-                          "Invoice Discounting",
-                          "Line of Credit",
-                          "Merchant Cash Advance",
-                        ].map((loanType) => (
+                        {loantype.map((loanType) => (
                           <div
-                            key={loanType}
+                            key={loanType._id}
                             className="flex items-center gap-2"
                           >
                             <input
                               type="checkbox"
-                              id={`loan-${loanType
+                              id={`loan-${loanType._id
                                 .replace(/\s+/g, "-")
                                 .toLowerCase()}`}
-                              checked={selectedLoanTypes.includes(loanType)}
+                              checked={selectedLoanTypes.includes(loanType._id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   setSelectedLoanTypes((prev) => [
                                     ...prev,
-                                    loanType,
+                                    loanType._id,
                                   ]);
                                 } else {
                                   setSelectedLoanTypes((prev) =>
-                                    prev.filter((type) => type !== loanType)
+                                    prev.filter((type) => type !== loanType._id)
                                   );
                                 }
                               }}
                               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <Label
-                              htmlFor={`loan-${loanType
+                              htmlFor={`loan-${loanType._id
                                 .replace(/\s+/g, "-")
                                 .toLowerCase()}`}
                               className="text-xs cursor-pointer"
                             >
-                              {loanType}
+                              {loanType.name}
                             </Label>
                           </div>
                         ))}
@@ -2804,9 +2908,10 @@ const OrganizationStructure = () => {
                         <input
                           type="checkbox"
                           id="enableRecurringDepositManagement"
-                          checked={enableRecurringDepositManagement === "yes"}
+                          checked={featureloandata.enablerecurringdeposit=== "yes"}
                           onChange={(e) => {
                             const value = e.target.checked ? "yes" : "no";
+                            featureloandata.enablerecurringdeposit=value
                             setEnableRecurringDepositManagement(value);
                             if (value === "no") {
                               setAutoCalculateLoanTenure("no");
@@ -2816,14 +2921,14 @@ const OrganizationStructure = () => {
                         />
                         <div
                           className={`w-11 h-6 rounded-full peer transition-colors duration-200 ease-in-out ${
-                            enableRecurringDepositManagement === "yes"
+                            featureloandata.enablerecurringdeposit === "yes"
                               ? "bg-blue-600"
                               : "bg-gray-200"
                           } relative`}
                         >
                           <div
                             className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out ${
-                              enableRecurringDepositManagement === "yes"
+                              featureloandata.enablerecurringdeposit === "yes"
                                 ? "translate-x-5"
                                 : "translate-x-0"
                             }`}
@@ -2835,17 +2940,18 @@ const OrganizationStructure = () => {
                   </div>
 
                   {/* Auto Calculate Loan Tenure - Show only when Enable Recurring Deposit Management is Yes */}
-                  {enableRecurringDepositManagement === "yes" && (
+                  {featureloandata.enablerecurringdeposit === "yes" && (
                     <div className="flex items-center gap-2 ml-8 mt-2">
                       <Label className="text-xs w-32 text-right">
                         Auto Calculate Loan Tenure as Per RD:
                       </Label>
                       <div className="w-20">
                         <Select
-                          value={autoCalculateLoanTenure}
-                          onValueChange={(value: "yes" | "no") =>
+                          value={featureloandata.autocalculateloanrd}
+                          onValueChange={(value: "yes" | "no") =>{
+                            featureloandata.autocalculateloanrd=value
                             setAutoCalculateLoanTenure(value)
-                          }
+                          }}
                         >
                           <SelectTrigger className="h-6 text-xs">
                             <SelectValue placeholder="Select Option" />
@@ -2873,9 +2979,10 @@ const OrganizationStructure = () => {
                         <input
                           type="checkbox"
                           id="enableFixedDepositManagement"
-                          checked={enableFixedDepositManagement === "yes"}
+                          checked={featureloandata.enablefixedloan === "yes"}
                           onChange={(e) => {
                             const value = e.target.checked ? "yes" : "no";
+                            featureloandata.enablefixedloan=value
                             setEnableFixedDepositManagement(value);
                             if (value === "no") {
                               setAutoCalculateLoanTenureForFD("no");
@@ -2885,14 +2992,14 @@ const OrganizationStructure = () => {
                         />
                         <div
                           className={`w-11 h-6 rounded-full peer transition-colors duration-200 ease-in-out ${
-                            enableFixedDepositManagement === "yes"
+                            featureloandata.enablefixedloan === "yes"
                               ? "bg-blue-600"
                               : "bg-gray-200"
                           } relative`}
                         >
                           <div
                             className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out ${
-                              enableFixedDepositManagement === "yes"
+                             featureloandata.enablefixedloan === "yes"
                                 ? "translate-x-5"
                                 : "translate-x-0"
                             }`}
@@ -2904,17 +3011,18 @@ const OrganizationStructure = () => {
                   </div>
 
                   {/* Auto Calculate Loan Tenure for FD - Show only when Enable Fixed Deposit Management is Yes */}
-                  {enableFixedDepositManagement === "yes" && (
+                  {featureloandata.enablefixedloan === "yes" && (
                     <div className="flex items-center gap-2 ml-8 mt-2">
                       <Label className="text-xs w-32 text-right">
                         Auto Calculate Loan Tenure as Per FD:
                       </Label>
                       <div className="w-20">
                         <Select
-                          value={autoCalculateLoanTenureForFD}
-                          onValueChange={(value: "yes" | "no") =>
+                          value={featureloandata.autocalculateloanfd}
+                          onValueChange={(value: "yes" | "no") =>{
+                            featureloandata.autocalculateloanfd=value
                             setAutoCalculateLoanTenureForFD(value)
-                          }
+                          }}
                         >
                           <SelectTrigger className="h-6 text-xs">
                             <SelectValue placeholder="Select Option" />
@@ -2933,25 +3041,7 @@ const OrganizationStructure = () => {
                   <Button
                     type="button"
                     onClick={() => {
-                      const payload = {
-                        enableLoanManagement,
-                        selectedLoanTypes:
-                          enableLoanManagement === "yes"
-                            ? selectedLoanTypes
-                            : [],
-                        enableRecurringDepositManagement,
-                        autoCalculateLoanTenure:
-                          enableRecurringDepositManagement === "yes"
-                            ? autoCalculateLoanTenure
-                            : "no",
-                        enableFixedDepositManagement,
-                        autoCalculateLoanTenureForFD:
-                          enableFixedDepositManagement === "yes"
-                            ? autoCalculateLoanTenureForFD
-                            : "no",
-                      } as const;
-                      // TODO: Replace with API call or persistence logic
-                      console.log("Saving features:", payload);
+                     savefeaturedata()
                     }}
                   >
                     Save Features

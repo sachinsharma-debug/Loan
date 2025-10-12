@@ -1,11 +1,14 @@
 import type { SalesMan } from "@/types";
-
+import { gettoken } from "./config";
 const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     headers: {
-      "Content-Type": "application/json",
+     
+           "Content-Type": "application/json",
+           "Authorization": `Bearer ${gettoken()}`
+         ,
       ...(options?.headers || {}),
     },
     ...(options || {}),

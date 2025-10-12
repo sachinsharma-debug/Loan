@@ -1,3 +1,5 @@
+
+import { gettoken } from "./config";
 // services/file-upload-api.ts
 const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
@@ -26,6 +28,10 @@ export const fileUploadApi = {
 
     const response = await fetch(`${API_BASE_URL}/masterupload`, {
       method: "POST",
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: formData,
       signal,
     });
@@ -80,6 +86,10 @@ export const fileUploadApi = {
 
     const response = await fetch(`${API_BASE_URL}/masterupload`, {
       method: "POST",
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
       body: formData,
       signal,
     });
@@ -105,6 +115,10 @@ export const fileUploadApi = {
   deleteFile: async (fileId: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/mastergetfile/${fileId}`, {
       method: "DELETE",
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
     });
 
     if (!response.ok) {
@@ -137,7 +151,13 @@ export const fileUploadApi = {
 
   // Get file metadata
   getFileMetadata: async (fileId: string): Promise<FileUploadResponse> => {
-    const response = await fetch(`${API_BASE_URL}/mastergetfile/${fileId}`);
+    const response = await fetch(`${API_BASE_URL}/mastergetfile/${fileId}`,{
+      method: "GET",
+      headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${gettoken()}`
+          },
+    });
 
     if (!response.ok) {
       throw new Error("Failed to get file metadata");

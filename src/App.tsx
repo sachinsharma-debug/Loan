@@ -66,7 +66,7 @@ import Insurance from "./pages/Reports/Insurance/Insurance";
 import WrittenOfReports from "./pages/Reports/WrittenOfReports/WrittenOfReports";
 import MISReportMemberwise from "./pages/Reports/MIS Report Memberwise/MISReportMemberwise";
 import MISReportBranchwise from "./pages/Reports/MIS Report Branchwise/MISReportBranchwise";
-import KycComponent from "./components/kyc";
+import KycPaage from "./pages/KycPage";
 import FixedDepositPage from "./components/FixedDeposit";
 import ACOpeningPage from "./components/ACOpening";
 import PaymentPage from "./components/Payment";
@@ -154,10 +154,8 @@ const App = () => (
             <Route
               path="kyc"
               element={
-                <KycComponent
-                  kycs={[]}
-                  onAddKYC={() => {}}
-                  onUpdateKYC={() => {}}
+                <KycPaage
+                 
                 />
               }
             />

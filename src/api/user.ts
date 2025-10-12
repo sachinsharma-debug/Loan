@@ -1,7 +1,7 @@
 import axios from "axios";
 import { User } from "@/types";
 
-const API_BASE_URL = "https://api-finance.prudent360.in/api/api/v1";
+const API_BASE_URL = "http://localhost:3000/api/api/v1";
 
 export const fetchUsers = async (): Promise<User[]> => {
   const response = await axios.get(`${API_BASE_URL}/users_list`);

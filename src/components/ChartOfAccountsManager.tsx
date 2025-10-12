@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,11 @@ import {
 import { toast } from "react-toastify";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
+import { gettoken } from "@/api/config";
+import { useSelector, useDispatch } from 'react-redux'
+import { setcompanyid } from '../redux/storeSlice'
+
+
 
 interface ChartOfAccount {
   _id: string;
@@ -116,6 +121,7 @@ const ChartOfAccountsManager = () => {
   const [voucherTypeSearch, setVoucherTypeSearch] = useState("");
   const [showVoucherDropdown, setShowVoucherDropdown] = useState(false);
   const voucherInputRef = React.useRef<HTMLInputElement>(null);
+  const companyid = useSelector((state) => state?.Store.companyid)
 
   // Restart numbering state
   type RestartRow = {
@@ -566,10 +572,17 @@ const ChartOfAccountsManager = () => {
     data: accounts = [],
     isLoading,
     isError,
+    refetch:accountsrefetch
   } = useQuery<ChartOfAccount[]>({
     queryKey: ["chartOfAccounts"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/getallchartsofaccountdata`);
+      const response = await fetch(`${API_BASE_URL}/getallchartsofaccountdata`,{
+        method: "GET",
+        headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${gettoken()}`
+            },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch accounts");
       }
@@ -578,6 +591,9 @@ const ChartOfAccountsManager = () => {
     },
   });
 
+  useEffect(()=>{
+accountsrefetch()
+},[companyid])
   // Create mutation
   type CreateAccountPayload = {
     accountName: string;
@@ -593,9 +609,11 @@ const ChartOfAccountsManager = () => {
           `${API_BASE_URL}/create-chart-of-accounts`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+           
+         headers: {
+               "Content-Type": "application/json",
+               "Authorization": `Bearer ${gettoken()}`
+             },
             body: JSON.stringify({
               accountName: newAccount.accountName,
               AccountType: newAccount.AccountType,
@@ -668,6 +686,10 @@ const ChartOfAccountsManager = () => {
         `${API_BASE_URL}/deletechartsofaccount/${id}`,
         {
           method: "DELETE",
+          headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${gettoken()}`
+              },
         }
       );
       if (!response.ok) {
