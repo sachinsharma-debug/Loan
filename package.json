@@ -41,7 +41,11 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@reduxjs/toolkit": "^2.9.0",
     "@tanstack/react-query": "^5.56.2",
+<<<<<<< HEAD
     "axios": "^1.12.2",
+=======
+    "axios": "^1.11.0",
+>>>>>>> 1c025d7c7141f8a8f3053f12727140b2900bb3b7
     "bootstrap": "^5.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

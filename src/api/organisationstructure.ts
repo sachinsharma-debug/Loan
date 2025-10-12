@@ -1,5 +1,4 @@
 import type { Company, Branch } from "@/types";
-
 import { gettoken } from "./config";
 const API_BASE_URL = "https://api-finance.prudent360.in/api/v1";
 
