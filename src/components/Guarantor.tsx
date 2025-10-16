@@ -62,6 +62,17 @@ const GuarantorComponent = () => {
     string | undefined
   >(undefined);
   const [spouseNameState, setSpouseNameState] = useState<string>("");
+  const [isSameAddress, setIsSameAddress] = useState(false);
+  const [communicationAddress, setCommunicationAddress] = useState({
+    address: "",
+    state: "",
+    district: "",
+    city: "",
+    pincode: "",
+    postoffice: "",
+    policestation: "",
+    landmark: "",
+  });
 
   useEffect(() => {
     // Clear spouse name whenever marital status is not 'married'
@@ -211,7 +222,7 @@ const GuarantorComponent = () => {
         date: guarantorData.date as string,
         id: guarantorData.guarantorid as string,
         guarantorName: guarantorData.guarantorname as string,
-        parent: guarantorData.parent as string,
+        accountingGroup: guarantorData.accountingGroup as string,
         fathersName: guarantorData.fathersname as string,
         mothersName: guarantorData.mothersname as string,
         dateOfBirth: guarantorData.dateofbirth as string,
@@ -325,7 +336,7 @@ const GuarantorComponent = () => {
         branch: guarantorData.branch as string,
         date: guarantorData.date as string,
         guarantorName: guarantorData.guarantorname as string,
-        parent: guarantorData.parent as string,
+        accountingGroup: guarantorData.accountingGroup as string,
         fathersName: guarantorData.fathersname as string,
         mothersName: guarantorData.mothersname as string,
         dateOfBirth: guarantorData.dateofbirth as string,
@@ -677,6 +688,20 @@ const GuarantorComponent = () => {
     setIsFormDialogOpen(true);
   };
 
+  // Handle communication address field changes
+  const handleCommunicationAddressChange = (field: string, value: string) => {
+    const newAddress = { ...communicationAddress, [field]: value };
+    setCommunicationAddress(newAddress);
+
+    // If same address is checked, update permanent address automatically
+    if (sameAsCommunication) {
+      setPermAddress((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
+  };
+
   // Seed address state when dialog opens for edit/view
   useEffect(() => {
     if (isFormDialogOpen) {
@@ -1007,6 +1032,81 @@ const GuarantorComponent = () => {
                     onKeyDown={createFormKeyDownHandler()}
                     className="space-y-3"
                   >
+                    {/* Add Master ID, Alter ID, Company ID fields at the top */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4 p-2">
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor="masterid"
+                          className="text-xs w-32 text-right"
+                        >
+                          Master ID:
+                        </Label>
+                        <Input
+                          id="masterid"
+                          name="masterid"
+                          className="h-6 text-xs flex-1"
+                          defaultValue={
+                            formMode !== "add"
+                              ? currentItem?.masterId || ""
+                              : undefined
+                          }
+                          readOnly={formMode === "view"}
+                          style={
+                            formMode === "view"
+                              ? { backgroundColor: "#f3f4f6" }
+                              : undefined
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor="alterid"
+                          className="text-xs w-32 text-right"
+                        >
+                          Alter ID:
+                        </Label>
+                        <Input
+                          id="alterid"
+                          name="alterid"
+                          className="h-6 text-xs flex-1"
+                          defaultValue={
+                            formMode !== "add"
+                              ? currentItem?.alterId || ""
+                              : undefined
+                          }
+                          readOnly={formMode === "view"}
+                          style={
+                            formMode === "view"
+                              ? { backgroundColor: "#f3f4f6" }
+                              : undefined
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor="companyid"
+                          className="text-xs w-32 text-right"
+                        >
+                          Company ID:
+                        </Label>
+                        <Input
+                          id="companyid"
+                          name="companyid"
+                          className="h-6 text-xs flex-1"
+                          defaultValue={
+                            formMode !== "add"
+                              ? currentItem?.companyId || ""
+                              : undefined
+                          }
+                          readOnly={formMode === "view"}
+                          style={
+                            formMode === "view"
+                              ? { backgroundColor: "#f3f4f6" }
+                              : undefined
+                          }
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 p-2">
                       <div className="flex items-center gap-2">
                         <Label
@@ -1114,15 +1214,15 @@ const GuarantorComponent = () => {
                           htmlFor="parent"
                           className="text-xs w-32 text-right"
                         >
-                          Parent:
+                          Accounting Group:
                         </Label>
                         <Input
-                          id="parent"
-                          name="parent"
+                          id="accountingGroup"
+                          name="accountingGroup"
                           className="h-6 text-xs flex-1"
                           defaultValue={
                             formMode !== "add"
-                              ? currentItem?.parent || ""
+                              ? currentItem?.accountingGroup || ""
                               : undefined
                           }
                           readOnly={formMode === "view"}
@@ -1604,14 +1704,72 @@ const GuarantorComponent = () => {
                                     name="address"
                                     className="text-xs flex-1 min-h-[80px]"
                                     value={commAddress.address}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                       setCommAddress({
                                         ...commAddress,
                                         address: e.target.value,
-                                      })
-                                    }
+                                      });
+                                      // Also sync with permanent address if checkbox is checked
+                                      if (sameAsCommunication) {
+                                        setPermAddress((prev) => ({
+                                          ...prev,
+                                          address: e.target.value,
+                                        }));
+                                      }
+                                    }}
                                     required
                                     disabled={formMode === "view"}
+                                  />
+                                </div>
+                                {/* Autofill by Pincode */}
+                                <div className="grid grid-cols-[120px,1fr] gap-2 items-center">
+                                  <Label className="text-xs text-right">
+                                    Autofill by Pincode:
+                                  </Label>
+                                  <Input
+                                    type="text"
+                                    className="h-7 text-xs"
+                                    placeholder="Enter pincode"
+                                    value={communicationAddress.pincode}
+                                    onChange={async (e) => {
+                                      const pincode = e.target.value;
+                                      handleCommunicationAddressChange(
+                                        "pincode",
+                                        pincode
+                                      );
+                                      if (pincode.length === 6) {
+                                        try {
+                                          const res = await fetch(
+                                            `https://api.postalpincode.in/pincode/${pincode}`
+                                          );
+                                          const data = await res.json();
+                                          const info =
+                                            data?.[0]?.PostOffice?.[0];
+                                          if (info) {
+                                            setCommunicationAddress((prev) => ({
+                                              ...prev,
+                                              state: info.State || prev.state,
+                                              district:
+                                                info.District || prev.district,
+                                              city: info.Block || prev.city,
+                                              postoffice:
+                                                info.Name || prev.postoffice,
+                                            }));
+                                            toast.success(
+                                              "Address autofilled by pincode"
+                                            );
+                                          } else {
+                                            toast.error(
+                                              "No address found for this pincode"
+                                            );
+                                          }
+                                        } catch {
+                                          toast.error(
+                                            "Failed to autofill address"
+                                          );
+                                        }
+                                      }
+                                    }}
                                   />
                                 </div>
                                 <div className="grid grid-cols-[120px,1fr] gap-2 items-center">
@@ -1625,12 +1783,12 @@ const GuarantorComponent = () => {
                                     id="state"
                                     name="state"
                                     className="h-7 text-xs"
-                                    value={commAddress.state}
+                                    value={communicationAddress.state}
                                     onChange={(e) =>
-                                      setCommAddress({
-                                        ...commAddress,
-                                        state: e.target.value,
-                                      })
+                                      handleCommunicationAddressChange(
+                                        "state",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                     disabled={formMode === "view"}
@@ -1647,12 +1805,12 @@ const GuarantorComponent = () => {
                                     id="district"
                                     name="district"
                                     className="h-7 text-xs"
-                                    value={commAddress.district}
+                                    value={communicationAddress.district}
                                     onChange={(e) =>
-                                      setCommAddress({
-                                        ...commAddress,
-                                        district: e.target.value,
-                                      })
+                                      handleCommunicationAddressChange(
+                                        "district",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                     disabled={formMode === "view"}
@@ -1669,12 +1827,12 @@ const GuarantorComponent = () => {
                                     id="city"
                                     name="city"
                                     className="h-7 text-xs"
-                                    value={commAddress.city}
+                                    value={communicationAddress.city}
                                     onChange={(e) =>
-                                      setCommAddress({
-                                        ...commAddress,
-                                        city: e.target.value,
-                                      })
+                                      handleCommunicationAddressChange(
+                                        "city",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                     disabled={formMode === "view"}
@@ -1691,12 +1849,12 @@ const GuarantorComponent = () => {
                                     id="pincode"
                                     name="pincode"
                                     className="h-7 text-xs"
-                                    value={commAddress.pincode}
+                                    value={communicationAddress.pincode}
                                     onChange={(e) =>
-                                      setCommAddress({
-                                        ...commAddress,
-                                        pincode: e.target.value,
-                                      })
+                                      handleCommunicationAddressChange(
+                                        "pincode",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                     disabled={formMode === "view"}
@@ -1713,12 +1871,12 @@ const GuarantorComponent = () => {
                                     id="postoffice"
                                     name="postoffice"
                                     className="h-7 text-xs"
-                                    value={commAddress.postoffice}
+                                    value={communicationAddress.postoffice}
                                     onChange={(e) =>
-                                      setCommAddress({
-                                        ...commAddress,
-                                        postoffice: e.target.value,
-                                      })
+                                      handleCommunicationAddressChange(
+                                        "postoffice",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                     disabled={formMode === "view"}
@@ -1735,12 +1893,12 @@ const GuarantorComponent = () => {
                                     id="policestation"
                                     name="policestation"
                                     className="h-7 text-xs"
-                                    value={commAddress.policestation}
+                                    value={communicationAddress.policestation}
                                     onChange={(e) =>
-                                      setCommAddress({
-                                        ...commAddress,
-                                        policestation: e.target.value,
-                                      })
+                                      handleCommunicationAddressChange(
+                                        "policestation",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                     disabled={formMode === "view"}
@@ -1758,12 +1916,19 @@ const GuarantorComponent = () => {
                                     name="landmark"
                                     className="h-7 text-xs"
                                     value={commAddress.landmark}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                       setCommAddress({
                                         ...commAddress,
                                         landmark: e.target.value,
-                                      })
-                                    }
+                                      });
+                                      // Also sync with permanent address if checkbox is checked
+                                      if (sameAsCommunication) {
+                                        setPermAddress((prev) => ({
+                                          ...prev,
+                                          landmark: e.target.value,
+                                        }));
+                                      }
+                                    }}
                                     required
                                     disabled={formMode === "view"}
                                   />
@@ -1790,7 +1955,32 @@ const GuarantorComponent = () => {
                                     onCheckedChange={(v: boolean) => {
                                       setSameAsCommunication(!!v);
                                       if (v) {
-                                        setPermAddress({ ...commAddress });
+                                        // Sync both address objects
+                                        setPermAddress({
+                                          address: commAddress.address,
+                                          state: communicationAddress.state,
+                                          district:
+                                            communicationAddress.district,
+                                          city: communicationAddress.city,
+                                          pincode: communicationAddress.pincode,
+                                          postoffice:
+                                            communicationAddress.postoffice,
+                                          policestation:
+                                            communicationAddress.policestation,
+                                          landmark: commAddress.landmark,
+                                        });
+                                      } else {
+                                        // Clear permanent address when unchecked to allow independent editing
+                                        setPermAddress({
+                                          address: "",
+                                          state: "",
+                                          district: "",
+                                          city: "",
+                                          pincode: "",
+                                          postoffice: "",
+                                          policestation: "",
+                                          landmark: "",
+                                        });
                                       }
                                     }}
                                   />
@@ -1839,7 +2029,7 @@ const GuarantorComponent = () => {
                                     className="h-7 text-xs"
                                     value={
                                       sameAsCommunication
-                                        ? commAddress.state
+                                        ? communicationAddress.state
                                         : permAddress.state
                                     }
                                     onChange={(e) =>
@@ -1867,7 +2057,7 @@ const GuarantorComponent = () => {
                                     className="h-7 text-xs"
                                     value={
                                       sameAsCommunication
-                                        ? commAddress.district
+                                        ? communicationAddress.district
                                         : permAddress.district
                                     }
                                     onChange={(e) =>
@@ -1895,7 +2085,7 @@ const GuarantorComponent = () => {
                                     className="h-7 text-xs"
                                     value={
                                       sameAsCommunication
-                                        ? commAddress.city
+                                        ? communicationAddress.city
                                         : permAddress.city
                                     }
                                     onChange={(e) =>
@@ -1923,7 +2113,7 @@ const GuarantorComponent = () => {
                                     className="h-7 text-xs"
                                     value={
                                       sameAsCommunication
-                                        ? commAddress.pincode
+                                        ? communicationAddress.pincode
                                         : permAddress.pincode
                                     }
                                     onChange={(e) =>
@@ -1951,7 +2141,7 @@ const GuarantorComponent = () => {
                                     className="h-7 text-xs"
                                     value={
                                       sameAsCommunication
-                                        ? commAddress.postoffice
+                                        ? communicationAddress.postoffice
                                         : permAddress.postoffice
                                     }
                                     onChange={(e) =>
@@ -1979,7 +2169,7 @@ const GuarantorComponent = () => {
                                     className="h-7 text-xs"
                                     value={
                                       sameAsCommunication
-                                        ? commAddress.policestation
+                                        ? communicationAddress.policestation
                                         : permAddress.policestation
                                     }
                                     onChange={(e) =>
@@ -2034,32 +2224,32 @@ const GuarantorComponent = () => {
                                     <input
                                       type="hidden"
                                       name="permanent-state"
-                                      value={commAddress.state}
+                                      value={communicationAddress.state}
                                     />
                                     <input
                                       type="hidden"
                                       name="permanent-district"
-                                      value={commAddress.district}
+                                      value={communicationAddress.district}
                                     />
                                     <input
                                       type="hidden"
                                       name="permanent-city"
-                                      value={commAddress.city}
+                                      value={communicationAddress.city}
                                     />
                                     <input
                                       type="hidden"
                                       name="permanent-pincode"
-                                      value={commAddress.pincode}
+                                      value={communicationAddress.pincode}
                                     />
                                     <input
                                       type="hidden"
                                       name="permanent-postoffice"
-                                      value={commAddress.postoffice}
+                                      value={communicationAddress.postoffice}
                                     />
                                     <input
                                       type="hidden"
                                       name="permanent-policestation"
-                                      value={commAddress.policestation}
+                                      value={communicationAddress.policestation}
                                     />
                                     <input
                                       type="hidden"

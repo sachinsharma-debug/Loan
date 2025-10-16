@@ -209,6 +209,7 @@ export interface SalesMan {
   id: string;
   empCode: string;
   name: string;
+  accountingGroup?: string;
   phone: string;
   email: string;
   branchId: string;
@@ -218,12 +219,34 @@ export interface SalesMan {
 // Dedicated Reference type (initially same shape as SalesMan for compatibility)
 export interface Reference {
   id: string;
+  masterId?: string;
+  alterId?: string;
+  companyId?: string;
   empCode: string;
   name: string;
+  accountingGroup?: string;
   phone: string;
   email: string;
   branchId: string;
   isActive: boolean;
+  // Communication Address
+  comm_address?: string;
+  comm_state?: string;
+  comm_district?: string;
+  comm_city?: string;
+  comm_pincode?: string;
+  comm_postoffice?: string;
+  comm_policestation?: string;
+  comm_landmark?: string;
+  // Permanent Address
+  perm_address?: string;
+  perm_state?: string;
+  perm_district?: string;
+  perm_city?: string;
+  perm_pincode?: string;
+  perm_postoffice?: string;
+  perm_policestation?: string;
+  perm_landmark?: string;
 }
 
 export interface TransactionType {
@@ -343,7 +366,7 @@ export interface Guarantor {
   guarantorName: string;
   branch?: string;
   date?: string;
-  parent?: string;
+  accountingGroup?: string;
   fathersName?: string;
   mothersName?: string;
   dateOfBirth?: string;
@@ -389,6 +412,9 @@ export interface Guarantor {
   kycDocuments?: boolean;
   bankDetails?: boolean;
   monthlyIncome?: number;
+  masterId?: string;
+  alterId?: string;
+  companyId?: string;
 }
 
 export interface EmploymentInfo {

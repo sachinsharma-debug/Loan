@@ -43,11 +43,9 @@ import { createFormKeyDownHandler } from "@/lib/formNavigation";
 import { Textarea } from "./ui/textarea";
 import { Country, State, City } from "country-state-city";
 import { companyApi, branchApi } from "@/api/organisationstructure";
-import { useSelector, useDispatch } from 'react-redux'
-import { setcompanyid } from '../redux/storeSlice'
-import {API} from "../api/config";
-
-
+import { useSelector, useDispatch } from "react-redux";
+import { setcompanyid } from "../redux/storeSlice";
+import { API } from "../api/config";
 
 // Note: You'll need to implement these APIs for complete functionality:
 // import { transactionApi } from "@/api/transaction";
@@ -179,104 +177,109 @@ const OrganizationStructure = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState({ companies: false, branches: false });
   const [error, setError] = useState({ companies: "", branches: "" });
-  const [loantype,setloantype]=useState([])
-const companyid = useSelector((state) => state?.Store.companyid)
-  const dispatch = useDispatch()
-  const [cmpchangerendor,setcmpchangerendor]=useState(true)
-  const [featureloandata,setfeatureloandata]=useState({
-   enableloanmanagement:"no",
-   applicableloantype:[],
-   enablerecurringdeposit:"no",
-   autocalculateloanrd:"no",
-   enablefixedloan:"no",
-   autocalculateloanfd:"no",
-   companyid:""
-})
-featureloandata.companyid=companyid
-const fetchfeature=async()=>{ 
-  let res=await API.getMethod('/get_master/feature')
-  if(res.data.data.length>0){
-    setfeatureloandata(res.data.data[0])
-  }
-  else{
-    setfeatureloandata({
-   enableloanmanagement:"no",
-   applicableloantype:[],
-   enablerecurringdeposit:"no",
-   autocalculateloanrd:"no",
-   enablefixedloan:"no",
-   autocalculateloanfd:"no",
-   companyid:""
-})
-  }
-
-}
-  useEffect(()=>{ 
-
-
-
-
-    const fetchloantype=async()=>{  
-      let res=await API.getMethod('/get_master/loantype')
-      console.log(res,"<<<<<<<<<<<<<<<,");
-
-      setloantype(res?.data?.data||[])
-    }
-    fetchloantype()
-
-    
-    fetchfeature()
-
-
-
-
-
-  },[companyid])
-
-
-
-
-  const savefeaturedata=async()=>{
-    
-    if(featureloandata._id){  
-      let __id=  featureloandata._id
-    delete featureloandata._id
-        let payload={
-      tablename:"feature",
-      data:{...featureloandata}
-    } 
-    
- const res=await API.updateMethod('/update_master/'+__id,payload)
-      
-    if(res?.status==200){ 
-      toast.success("Feature updated successfully")
-      fetchfeature()
+  const [loantype, setloantype] = useState([]);
+  const companyid = useSelector((state: any) => state?.Store?.companyid);
+  const dispatch = useDispatch();
+  const [cmpchangerendor, setcmpchangerendor] = useState(true);
+  const [featureloandata, setfeatureloandata] = useState({
+    enableloanmanagement: "no",
+    applicableloantype: [],
+    enablerecurringdeposit: "no",
+    autocalculateloanrd: "no",
+    enablefixedloan: "no",
+    autocalculateloanfd: "no",
+    companyid: "",
+    memberidconfig: "no",
+    // Member ID configuration fields
+    memberidformat: "manual", // auto | branchwise | manual
+    memberiddisplaylastid: "no", // yes | no
+    memberidprefix: "",
+    memberidstarting: "0",
+    memberidwidth: "0",
+    memberidrows: [
+      { applicableFrom: "", prefix: "", starting: "0", width: "0" },
+    ],
+  });
+  featureloandata.companyid = companyid;
+  const fetchfeature = async () => {
+    const res: any = await API.getMethod("/get_master/feature");
+    if (res.data.data.length > 0) {
+      const incoming = res.data.data[0] || {};
+      setfeatureloandata((prev: any) => ({
+        ...prev,
+        ...incoming,
+        memberidrows:
+          incoming.memberidrows && incoming.memberidrows.length
+            ? incoming.memberidrows
+            : prev.memberidrows,
+      }));
     } else {
-      toast.error("Failed to update feature")
+      setfeatureloandata({
+        enableloanmanagement: "no",
+        applicableloantype: [],
+        enablerecurringdeposit: "no",
+        autocalculateloanrd: "no",
+        enablefixedloan: "no",
+        autocalculateloanfd: "no",
+        companyid: "",
+        memberidconfig: "no",
+        memberidformat: "manual",
+        memberiddisplaylastid: "no",
+        memberidprefix: "",
+        memberidstarting: "0",
+        memberidwidth: "0",
+        memberidrows: [
+          { applicableFrom: "", prefix: "", starting: "0", width: "0" },
+        ],
+      });
     }
+  };
+  useEffect(() => {
+    const fetchloantype = async () => {
+      const res: any = await API.getMethod("/get_master/loantype");
+      console.log(res, "<<<<<<<<<<<<<<<,");
 
-  }
-  else {
-    let payload={
-      tablename:"feature",
-      data:{...featureloandata}
-    }
-     const   res=await API.postMethod('/create_master',payload)
-    if(res?.status==200){
-      toast.success("Feature added successfully")
-      fetchfeature()
+      setloantype(res?.data?.data || []);
+    };
+    fetchloantype();
+
+    fetchfeature();
+  }, [companyid]);
+
+  const savefeaturedata = async () => {
+    if ((featureloandata as any)._id) {
+      let __id = (featureloandata as any)._id;
+      delete (featureloandata as any)._id;
+      let payload = {
+        tablename: "feature",
+        data: { ...featureloandata },
+      };
+
+      const res: any = await API.updateMethod(
+        "/update_master/" + __id,
+        payload
+      );
+
+      if (res?.status == 200) {
+        toast.success("Feature updated successfully");
+        fetchfeature();
+      } else {
+        toast.error("Failed to update feature");
+      }
     } else {
-      toast.error("Failed to add feature")
+      let payload = {
+        tablename: "feature",
+        data: { ...featureloandata },
+      };
+      const res: any = await API.postMethod("/create_master", payload);
+      if (res?.status == 200) {
+        toast.success("Feature added successfully");
+        fetchfeature();
+      } else {
+        toast.error("Failed to add feature");
+      }
     }
-
-  }
-}
-
-
-
-
-
-
+  };
 
   useEffect(() => {
     setcmpchangerendor(!cmpchangerendor);
@@ -305,7 +308,7 @@ const fetchfeature=async()=>{
     "yes" | "no"
   >("no");
   const [selectedLoanTypes, setSelectedLoanTypes] = useState<string[]>([]);
-  console.log(selectedLoanTypes,"selectedLoanTypesselectedLoanTypes");
+  console.log(selectedLoanTypes, "selectedLoanTypesselectedLoanTypes");
   const [
     enableRecurringDepositManagement,
     setEnableRecurringDepositManagement,
@@ -317,6 +320,32 @@ const fetchfeature=async()=>{
     useState<"yes" | "no">("no");
   const [autoCalculateLoanTenureForFD, setAutoCalculateLoanTenureForFD] =
     useState<"yes" | "no">("no");
+
+  // Helpers for Member ID table navigation
+  const focusMemberIdField = (
+    rowIndex: number,
+    field: "date" | "prefix" | "starting" | "width"
+  ) => {
+    const el = document.getElementById(
+      `memberid-${rowIndex}-${field}`
+    ) as HTMLInputElement | null;
+    if (el) {
+      el.focus();
+      try {
+        el.select?.();
+      } catch {}
+    }
+  };
+
+  const isMemberRowComplete = (row: any) => {
+    if (!row) return false;
+    const hasDate = !!row.applicableFrom;
+    const hasPrefix =
+      typeof row.prefix === "string" && row.prefix.trim() !== "";
+    const hasStarting = row.starting !== undefined && row.starting !== "";
+    const hasWidth = row.width !== undefined && row.width !== "";
+    return hasDate && hasPrefix && hasStarting && hasWidth;
+  };
 
   // Country-State-City data
   const [countries, setCountries] = useState<any[]>([]);
@@ -334,6 +363,8 @@ const fetchfeature=async()=>{
   // Pincode data
   const [companyPincodes, setCompanyPincodes] = useState<any[]>([]);
   const [branchPincodes, setBranchPincodes] = useState<any[]>([]);
+  const [companyPincode, setCompanyPincode] = useState("");
+  const [branchPincode, setBranchPincode] = useState("");
   const [selectedCompanyCity, setSelectedCompanyCity] = useState("");
   const [selectedBranchCity, setSelectedBranchCity] = useState("");
 
@@ -351,6 +382,12 @@ const fetchfeature=async()=>{
   // Email states for validation and lowercase conversion
   const [companyEmail, setCompanyEmail] = useState("");
   const [branchEmail, setBranchEmail] = useState("");
+  // Toggle for branch pincode autofill input visibility
+  const [enableBranchPincodeAutofill, setEnableBranchPincodeAutofill] =
+    useState<"yes" | "no">("no");
+  // Toggle for company pincode autofill input visibility
+  const [enableCompanyPincodeAutofill, setEnableCompanyPincodeAutofill] =
+    useState<"yes" | "no">("no");
 
   // Currency mapping based on country ISO codes
   const currencyMapping: Record<string, { symbol: string; name: string }> = {
@@ -1151,6 +1188,8 @@ const fetchfeature=async()=>{
     setBranchCities([]);
     setCompanyPincodes([]);
     setBranchPincodes([]);
+    setCompanyPincode("");
+    setBranchPincode("");
     setCompanyPincodeError("");
     setBranchPincodeError("");
     setMailingName("");
@@ -1162,6 +1201,8 @@ const fetchfeature=async()=>{
     setBookBeginningDate("");
     setIsEditMode(false);
     setEditingItem(null);
+    setEnableBranchPincodeAutofill("no");
+    setEnableCompanyPincodeAutofill("no");
     setAdditionalBaseCurrency("no");
     // Reset currency states
     setBaseCurrencySymbol("₹");
@@ -1711,8 +1752,7 @@ const fetchfeature=async()=>{
     setBookBeginningDate(newDate);
   };
 
-
-  console.log(featureloandata,"dskfjkdjfk sdf")
+  console.log(featureloandata, "dskfjkdjfk sdf");
 
   // Confirm financial year change and reset data
   const confirmFinancialYearChange = async () => {
@@ -2011,6 +2051,80 @@ const fetchfeature=async()=>{
                                     }
                                   />
                                 </div>
+                                {/* Pincode Autofill Section with Toggle */}
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs w-28 text-right">
+                                    Autofill by Pincode:
+                                  </Label>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs">No</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          enableCompanyPincodeAutofill === "yes"
+                                        }
+                                        onChange={(e) =>
+                                          setEnableCompanyPincodeAutofill(
+                                            e.target.checked ? "yes" : "no"
+                                          )
+                                        }
+                                        className="sr-only peer"
+                                      />
+                                      <div
+                                        className={`w-11 h-6 rounded-full peer transition-colors duration-200 ease-in-out ${
+                                          enableCompanyPincodeAutofill === "yes"
+                                            ? "bg-blue-600"
+                                            : "bg-gray-200"
+                                        } relative`}
+                                      >
+                                        <div
+                                          className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out ${
+                                            enableCompanyPincodeAutofill ===
+                                            "yes"
+                                              ? "translate-x-5"
+                                              : "translate-x-0"
+                                          }`}
+                                        ></div>
+                                      </div>
+                                    </label>
+                                    <span className="text-xs">Yes</span>
+                                  </div>
+                                  {enableCompanyPincodeAutofill === "yes" && (
+                                    <Input
+                                      id="pincode-autofill"
+                                      name="pincode-autofill"
+                                      className="h-6 text-xs flex-1"
+                                      maxLength={6}
+                                      pattern="[0-9]{6}"
+                                      placeholder="Enter 6-digit pincode"
+                                      onChange={async (e) => {
+                                        const value = e.target.value;
+                                        if (
+                                          value.length === 6 &&
+                                          /^\d{6}$/.test(value)
+                                        ) {
+                                          await handlePincodeChange(
+                                            value,
+                                            true
+                                          );
+                                          setCompanyPincode(value);
+                                          setCompanyPincodeError("");
+                                        } else if (value.length === 0) {
+                                          setSelectedCompanyState("");
+                                          setSelectedCompanyCity("");
+                                          setSelectedCompanyDistrict("");
+                                          setCompanyStates([]);
+                                          setCompanyCities([]);
+                                          setCompanyPincodes([]);
+                                          setCompanyPincode("");
+                                          setCompanyPincodeError("");
+                                        }
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                                {/* Country Field */}
                                 <div className="flex items-center gap-2">
                                   <Label
                                     htmlFor="country"
@@ -2277,7 +2391,9 @@ const fetchfeature=async()=>{
                                       >
                                         <Select
                                           name="pincode"
+                                          value={companyPincode || undefined}
                                           onValueChange={(value) => {
+                                            setCompanyPincode(value);
                                             setTimeout(
                                               () => focusNextField("pincode"),
                                               100
@@ -2351,6 +2467,12 @@ const fetchfeature=async()=>{
                                             )}
                                           </SelectContent>
                                         </Select>
+                                        {/* Hidden input to ensure pincode is submitted */}
+                                        <input
+                                          type="hidden"
+                                          name="pincode"
+                                          value={companyPincode || ""}
+                                        />
                                       </div>
                                     ) : (
                                       <div>
@@ -2366,8 +2488,10 @@ const fetchfeature=async()=>{
                                           maxLength={6}
                                           pattern="[0-9]{6}"
                                           placeholder="Enter 6-digit pincode"
-                                          defaultValue={
-                                            activeItem?.pincode || ""
+                                          value={
+                                            companyPincode ||
+                                            activeItem?.pincode ||
+                                            ""
                                           }
                                           ref={(el) =>
                                             setFieldRef("pincode", el)
@@ -2377,6 +2501,7 @@ const fetchfeature=async()=>{
                                           }
                                           onChange={(e) => {
                                             const value = e.target.value;
+                                            setCompanyPincode(value);
                                             handleManualPincodeInput(
                                               value,
                                               true
@@ -2392,7 +2517,7 @@ const fetchfeature=async()=>{
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                {/* <div className="flex items-center gap-2">
                                   <Label
                                     htmlFor="fax"
                                     className="text-xs w-28 text-right"
@@ -2408,7 +2533,7 @@ const fetchfeature=async()=>{
                                     ref={(el) => setFieldRef("fax", el)}
                                     onKeyDown={(e) => handleKeyDown(e, "fax")}
                                   />
-                                </div>
+                                </div> */}
                               </div>
                             </div>
 
@@ -3086,10 +3211,12 @@ const fetchfeature=async()=>{
                         <input
                           type="checkbox"
                           id="enableLoanManagement"
-                          checked={featureloandata.enableloanmanagement=== "yes"}
+                          checked={
+                            featureloandata.enableloanmanagement === "yes"
+                          }
                           onChange={(e) => {
                             const value = e.target.checked ? "yes" : "no";
-                            featureloandata.enableloanmanagement=value
+                            featureloandata.enableloanmanagement = value;
                             setEnableLoanManagement(value);
                             if (value === "no") {
                               setSelectedLoanTypes([]);
@@ -3099,7 +3226,7 @@ const fetchfeature=async()=>{
                         />
                         <div
                           className={`w-11 h-6 rounded-full peer transition-colors duration-200 ease-in-out ${
-                            featureloandata.enableloanmanagement=== "yes"
+                            featureloandata.enableloanmanagement === "yes"
                               ? "bg-blue-600"
                               : "bg-gray-200"
                           } relative`}
@@ -3177,10 +3304,12 @@ const fetchfeature=async()=>{
                         <input
                           type="checkbox"
                           id="enableRecurringDepositManagement"
-                          checked={featureloandata.enablerecurringdeposit=== "yes"}
+                          checked={
+                            featureloandata.enablerecurringdeposit === "yes"
+                          }
                           onChange={(e) => {
                             const value = e.target.checked ? "yes" : "no";
-                            featureloandata.enablerecurringdeposit=value
+                            featureloandata.enablerecurringdeposit = value;
                             setEnableRecurringDepositManagement(value);
                             if (value === "no") {
                               setAutoCalculateLoanTenure("no");
@@ -3217,9 +3346,9 @@ const fetchfeature=async()=>{
                       <div className="w-20">
                         <Select
                           value={featureloandata.autocalculateloanrd}
-                          onValueChange={(value: "yes" | "no") =>{
-                            featureloandata.autocalculateloanrd=value
-                            setAutoCalculateLoanTenure(value)
+                          onValueChange={(value: "yes" | "no") => {
+                            featureloandata.autocalculateloanrd = value;
+                            setAutoCalculateLoanTenure(value);
                           }}
                         >
                           <SelectTrigger className="h-6 text-xs">
@@ -3251,7 +3380,7 @@ const fetchfeature=async()=>{
                           checked={featureloandata.enablefixedloan === "yes"}
                           onChange={(e) => {
                             const value = e.target.checked ? "yes" : "no";
-                            featureloandata.enablefixedloan=value
+                            featureloandata.enablefixedloan = value;
                             setEnableFixedDepositManagement(value);
                             if (value === "no") {
                               setAutoCalculateLoanTenureForFD("no");
@@ -3268,7 +3397,7 @@ const fetchfeature=async()=>{
                         >
                           <div
                             className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out ${
-                             featureloandata.enablefixedloan === "yes"
+                              featureloandata.enablefixedloan === "yes"
                                 ? "translate-x-5"
                                 : "translate-x-0"
                             }`}
@@ -3288,9 +3417,9 @@ const fetchfeature=async()=>{
                       <div className="w-20">
                         <Select
                           value={featureloandata.autocalculateloanfd}
-                          onValueChange={(value: "yes" | "no") =>{
-                            featureloandata.autocalculateloanfd=value
-                            setAutoCalculateLoanTenureForFD(value)
+                          onValueChange={(value: "yes" | "no") => {
+                            featureloandata.autocalculateloanfd = value;
+                            setAutoCalculateLoanTenureForFD(value);
                           }}
                         >
                           <SelectTrigger className="h-6 text-xs">
@@ -3304,13 +3433,397 @@ const fetchfeature=async()=>{
                       </div>
                     </div>
                   )}
+
+                  {/* Member ID Config */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label
+                        htmlFor="MemberIdConfig"
+                        className="text-xs w-40 text-right"
+                      >
+                        Member ID Config:
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">No</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id="MemberIdConfig"
+                            checked={featureloandata.memberidconfig === "yes"}
+                            onChange={(e) => {
+                              const value: "yes" | "no" = e.target.checked
+                                ? "yes"
+                                : "no";
+                              setfeatureloandata({
+                                ...featureloandata,
+                                memberidconfig: value,
+                              });
+                            }}
+                            className="sr-only peer"
+                          />
+                          <div
+                            className={`w-11 h-6 rounded-full peer transition-colors duration-200 ease-in-out ${
+                              featureloandata.memberidconfig === "yes"
+                                ? "bg-blue-600"
+                                : "bg-gray-200"
+                            } relative`}
+                          >
+                            <div
+                              className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out ${
+                                featureloandata.memberidconfig === "yes"
+                                  ? "translate-x-5"
+                                  : "translate-x-0"
+                              }`}
+                            ></div>
+                          </div>
+                        </label>
+                        <span className="text-xs">Yes</span>
+                      </div>
+                    </div>
+
+                    {featureloandata.memberidconfig === "yes" && (
+                      <div className="ml-8 mt-3 space-y-4">
+                        <h3 className="text-sm font-semibold text-center border-y border-gray-200 py-2">
+                          Member ID Configuration
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs w-40 text-right">
+                            Format Type
+                          </Label>
+                          <div className="w-48">
+                            <Select
+                              value={featureloandata.memberidformat}
+                              onValueChange={(
+                                v: "auto" | "branchwise" | "manual"
+                              ) =>
+                                setfeatureloandata({
+                                  ...featureloandata,
+                                  memberidformat: v as any,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="h-7 text-xs">
+                                <SelectValue placeholder="Format Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="auto">Auto</SelectItem>
+                                <SelectItem value="branchwise">
+                                  Branchwise
+                                </SelectItem>
+                                <SelectItem value="manual">Manual</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {featureloandata.memberidformat === "manual" && (
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs w-40 text-right">
+                              Display last ID?
+                            </Label>
+                            <div className="w-24">
+                              <Select
+                                value={featureloandata.memberiddisplaylastid}
+                                onValueChange={(v: "yes" | "no") =>
+                                  setfeatureloandata({
+                                    ...featureloandata,
+                                    memberiddisplaylastid: v,
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="h-7 text-xs">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="no">No</SelectItem>
+                                  <SelectItem value="yes">Yes</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Table for prefix and numeric part (multi-row) */}
+                        <div className="rounded-md border bg-white">
+                          <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50">
+                            <span className="text-xs text-gray-600">
+                              Press Enter in any field to add a new row
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                const rows = [
+                                  ...(featureloandata.memberidrows || []),
+                                ];
+                                rows.push({
+                                  applicableFrom: "",
+                                  prefix: "",
+                                  starting: "0",
+                                  width: "0",
+                                });
+                                setfeatureloandata({
+                                  ...featureloandata,
+                                  memberidrows: rows,
+                                });
+                                // focus first field of the newly added row
+                                setTimeout(
+                                  () =>
+                                    focusMemberIdField(rows.length - 1, "date"),
+                                  0
+                                );
+                              }}
+                            >
+                              Add Row
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-12 text-[11px] font-medium px-3 py-2 border-b bg-gray-50">
+                            <div className="col-span-3">Applicable From</div>
+                            <div className="col-span-3">Prefix</div>
+                            <div className="col-span-2">Starting Number</div>
+                            <div className="col-span-2">
+                              Width Of Numerical Part
+                            </div>
+                            <div className="col-span-1 text-right pr-2">
+                              Format
+                            </div>
+                            <div className="col-span-1 text-center">Action</div>
+                          </div>
+                          {(featureloandata.memberidrows || []).map(
+                            (row: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="grid grid-cols-12 items-center text-xs px-3 py-2 border-b last:border-b-0 hover:bg-gray-50"
+                              >
+                                <div className="col-span-3 pr-2">
+                                  <Input
+                                    className="h-7 text-xs"
+                                    type="date"
+                                    id={`memberid-${idx}-date`}
+                                    value={row.applicableFrom || ""}
+                                    onChange={(e) => {
+                                      const rows = [
+                                        ...(featureloandata.memberidrows || []),
+                                      ];
+                                      rows[idx] = {
+                                        ...rows[idx],
+                                        applicableFrom: e.target.value,
+                                      };
+                                      setfeatureloandata({
+                                        ...featureloandata,
+                                        memberidrows: rows,
+                                      });
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        focusMemberIdField(idx, "prefix");
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-span-3 pr-2">
+                                  <Input
+                                    className="h-7 text-xs"
+                                    placeholder="e.g. MEM/"
+                                    id={`memberid-${idx}-prefix`}
+                                    value={row.prefix}
+                                    onChange={(e) => {
+                                      const rows = [
+                                        ...(featureloandata.memberidrows || []),
+                                      ];
+                                      rows[idx] = {
+                                        ...rows[idx],
+                                        prefix: e.target.value,
+                                      };
+                                      setfeatureloandata({
+                                        ...featureloandata,
+                                        memberidrows: rows,
+                                      });
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        focusMemberIdField(idx, "starting");
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-span-2 pr-2">
+                                  <Input
+                                    className="h-7 text-xs"
+                                    type="number"
+                                    placeholder="0"
+                                    id={`memberid-${idx}-starting`}
+                                    value={row.starting}
+                                    onChange={(e) => {
+                                      const rows = [
+                                        ...(featureloandata.memberidrows || []),
+                                      ];
+                                      rows[idx] = {
+                                        ...rows[idx],
+                                        starting: e.target.value,
+                                      };
+                                      setfeatureloandata({
+                                        ...featureloandata,
+                                        memberidrows: rows,
+                                      });
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        focusMemberIdField(idx, "width");
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-span-2 pr-2">
+                                  <Input
+                                    className="h-7 text-xs"
+                                    type="number"
+                                    placeholder="0"
+                                    id={`memberid-${idx}-width`}
+                                    value={row.width}
+                                    onChange={(e) => {
+                                      const rows = [
+                                        ...(featureloandata.memberidrows || []),
+                                      ];
+                                      rows[idx] = {
+                                        ...rows[idx],
+                                        width: e.target.value,
+                                      };
+                                      setfeatureloandata({
+                                        ...featureloandata,
+                                        memberidrows: rows,
+                                      });
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        const rows = [
+                                          ...(featureloandata.memberidrows ||
+                                            []),
+                                        ];
+                                        const complete = isMemberRowComplete(
+                                          rows[idx]
+                                        );
+                                        if (complete) {
+                                          rows.push({
+                                            applicableFrom: "",
+                                            prefix: "",
+                                            starting: "0",
+                                            width: "",
+                                          });
+                                          setfeatureloandata({
+                                            ...featureloandata,
+                                            memberidrows: rows,
+                                          });
+                                          setTimeout(
+                                            () =>
+                                              focusMemberIdField(
+                                                rows.length - 1,
+                                                "date"
+                                              ),
+                                            0
+                                          );
+                                        } else {
+                                          const r = rows[idx];
+                                          if (!r.applicableFrom)
+                                            return focusMemberIdField(
+                                              idx,
+                                              "date"
+                                            );
+                                          if (
+                                            !r.prefix ||
+                                            r.prefix.trim() === ""
+                                          )
+                                            return focusMemberIdField(
+                                              idx,
+                                              "prefix"
+                                            );
+                                          if (
+                                            r.starting === "" ||
+                                            r.starting === undefined
+                                          )
+                                            return focusMemberIdField(
+                                              idx,
+                                              "starting"
+                                            );
+                                          if (
+                                            r.width === "" ||
+                                            r.width === undefined
+                                          )
+                                            return focusMemberIdField(
+                                              idx,
+                                              "width"
+                                            );
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-span-1 text-right pr-2">
+                                  <span className="text-gray-700">
+                                    {featureloandata.memberidformat ===
+                                    "branchwise"
+                                      ? `<BranchCode>/${
+                                          row.prefix || ""
+                                        }${String(
+                                          Number(row.starting || 0)
+                                        ).padStart(
+                                          Number(row.width || 0),
+                                          "0"
+                                        )}`
+                                      : `${row.prefix || ""}${String(
+                                          Number(row.starting || 0)
+                                        ).padStart(
+                                          Number(row.width || 0),
+                                          "0"
+                                        )}`}
+                                  </span>
+                                </div>
+                                <div className="col-span-1 text-center">
+                                  <button
+                                    type="button"
+                                    className="text-[11px] text-red-600 hover:underline"
+                                    onClick={() => {
+                                      const rows = [
+                                        ...(featureloandata.memberidrows || []),
+                                      ];
+                                      rows.splice(idx, 1);
+                                      setfeatureloandata({
+                                        ...featureloandata,
+                                        memberidrows: rows.length
+                                          ? rows
+                                          : [
+                                              {
+                                                applicableFrom: "",
+                                                prefix: "",
+                                                starting: "0",
+                                                width: "0",
+                                              },
+                                            ],
+                                      });
+                                    }}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-end mt-4">
                   <Button
                     type="button"
                     onClick={() => {
-                     savefeaturedata()
+                      savefeaturedata();
                     }}
                   >
                     Save Features
@@ -3483,6 +3996,77 @@ const fetchfeature=async()=>{
                                   handleKeyDown(e, "address", true)
                                 }
                               />
+                            </div>
+                            {/* Toggle + Autofill by Pincode */}
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs w-40 text-right">
+                                Autofill by Pincode:
+                              </Label>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs">No</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      enableBranchPincodeAutofill === "yes"
+                                    }
+                                    onChange={(e) =>
+                                      setEnableBranchPincodeAutofill(
+                                        e.target.checked ? "yes" : "no"
+                                      )
+                                    }
+                                    className="sr-only peer"
+                                  />
+                                  <div
+                                    className={`w-11 h-6 rounded-full peer transition-colors duration-200 ease-in-out ${
+                                      enableBranchPincodeAutofill === "yes"
+                                        ? "bg-blue-600"
+                                        : "bg-gray-200"
+                                    } relative`}
+                                  >
+                                    <div
+                                      className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out ${
+                                        enableBranchPincodeAutofill === "yes"
+                                          ? "translate-x-5"
+                                          : "translate-x-0"
+                                      }`}
+                                    ></div>
+                                  </div>
+                                </label>
+                                <span className="text-xs">Yes</span>
+                              </div>
+                              {enableBranchPincodeAutofill === "yes" && (
+                                <Input
+                                  id="branch-pincode-autofill"
+                                  name="branch-pincode-autofill"
+                                  className="h-6 text-xs flex-1"
+                                  maxLength={6}
+                                  pattern="[0-9]{6}"
+                                  placeholder="Enter 6-digit pincode"
+                                  onChange={async (e) => {
+                                    const value = e.target.value;
+                                    if (
+                                      value.length === 6 &&
+                                      /^\d{6}$/.test(value)
+                                    ) {
+                                      // Fetch location data for branch pincode
+                                      await handlePincodeChange(value, false);
+                                      // Also set the primary Pincode field value so it auto-fills too
+                                      setBranchPincode(value);
+                                      // Ensure any error is cleared
+                                      setBranchPincodeError("");
+                                    } else if (value.length === 0) {
+                                      setSelectedBranchState("");
+                                      setSelectedBranchCity("");
+                                      setSelectedBranchDistrict("");
+                                      setBranchCities([]);
+                                      setBranchPincodes([]);
+                                      setBranchPincode("");
+                                      setBranchPincodeError("");
+                                    }
+                                  }}
+                                />
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <Label
@@ -3667,7 +4251,9 @@ const fetchfeature=async()=>{
                                   >
                                     <Select
                                       name="branchPincode"
+                                      value={branchPincode || undefined}
                                       onValueChange={(value) => {
+                                        setBranchPincode(value);
                                         setTimeout(
                                           () => focusNextField("branchPincode"),
                                           100
@@ -3733,6 +4319,12 @@ const fetchfeature=async()=>{
                                         )}
                                       </SelectContent>
                                     </Select>
+                                    {/* Hidden input to submit selected pincode with the form */}
+                                    <input
+                                      type="hidden"
+                                      name="branchPincode"
+                                      value={branchPincode || ""}
+                                    />
                                   </div>
                                 ) : (
                                   <div>
@@ -3747,7 +4339,8 @@ const fetchfeature=async()=>{
                                       maxLength={6}
                                       pattern="[0-9]{6}"
                                       placeholder="Enter 6-digit pincode"
-                                      defaultValue={
+                                      value={
+                                        branchPincode ||
                                         activeItem?.branchPincode ||
                                         activeItem?.pincode ||
                                         ""
@@ -3760,6 +4353,7 @@ const fetchfeature=async()=>{
                                       }
                                       onChange={(e) => {
                                         const value = e.target.value;
+                                        setBranchPincode(value);
                                         handleManualPincodeInput(value, false);
                                       }}
                                     />

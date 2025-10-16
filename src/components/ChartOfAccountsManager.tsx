@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,10 +55,8 @@ import { toast } from "react-toastify";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { gettoken } from "@/api/config";
-import { useSelector, useDispatch } from 'react-redux'
-import { setcompanyid } from '../redux/storeSlice'
-
-
+import { useSelector, useDispatch } from "react-redux";
+import { setcompanyid } from "../redux/storeSlice";
 
 interface ChartOfAccount {
   _id: string;
@@ -121,7 +119,7 @@ const ChartOfAccountsManager = () => {
   const [voucherTypeSearch, setVoucherTypeSearch] = useState("");
   const [showVoucherDropdown, setShowVoucherDropdown] = useState(false);
   const voucherInputRef = React.useRef<HTMLInputElement>(null);
-  const companyid = useSelector((state) => state?.Store.companyid)
+  const companyid = useSelector((state: any) => state?.Store?.companyid);
 
   // Restart numbering state
   type RestartRow = {
@@ -572,17 +570,20 @@ const ChartOfAccountsManager = () => {
     data: accounts = [],
     isLoading,
     isError,
-    refetch:accountsrefetch
+    refetch: accountsrefetch,
   } = useQuery<ChartOfAccount[]>({
     queryKey: ["chartOfAccounts"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/getallchartsofaccountdata`,{
-        method: "GET",
-        headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${gettoken()}`
-            },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/getallchartsofaccountdata`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${gettoken()}`,
+          },
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch accounts");
       }
@@ -591,9 +592,9 @@ const ChartOfAccountsManager = () => {
     },
   });
 
-  useEffect(()=>{
-accountsrefetch()
-},[companyid])
+  useEffect(() => {
+    accountsrefetch();
+  }, [companyid]);
   // Create mutation
   type CreateAccountPayload = {
     accountName: string;
@@ -609,11 +610,11 @@ accountsrefetch()
           `${API_BASE_URL}/create-chart-of-accounts`,
           {
             method: "POST",
-           
-         headers: {
-               "Content-Type": "application/json",
-               "Authorization": `Bearer ${gettoken()}`
-             },
+
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${gettoken()}`,
+            },
             body: JSON.stringify({
               accountName: newAccount.accountName,
               AccountType: newAccount.AccountType,
@@ -687,9 +688,9 @@ accountsrefetch()
         {
           method: "DELETE",
           headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${gettoken()}`
-              },
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${gettoken()}`,
+          },
         }
       );
       if (!response.ok) {
@@ -826,6 +827,12 @@ accountsrefetch()
     // Add custom account groups to the mapping
     customAccountGroups.forEach((group) => {
       accountTypeMapping[group.name] = group.parent;
+    });
+    // Add existing account groups from server to the mapping as well
+    accounts?.forEach((a) => {
+      if (a?.accountName) {
+        accountTypeMapping[a.accountName] = a.AccountType || "Primary";
+      }
     });
     setSelectedAccountUnder(accountTypeMapping[account.AccountType] || "");
     setEditAccountTypeSearchTerm("");
@@ -1960,7 +1967,7 @@ accountsrefetch()
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add New Account</DialogTitle>
+                        <DialogTitle>Add New Accounting Group</DialogTitle>
                       </DialogHeader>
                       <form
                         onSubmit={handleSubmit}
@@ -2095,6 +2102,14 @@ accountsrefetch()
                                     accountTypeMapping[group.name] =
                                       group.parent;
                                   });
+                                  // Add existing account groups from server to the mapping
+                                  // If an account group exists (not deleted), use its AccountType as parent
+                                  accounts?.forEach((a) => {
+                                    if (a?.accountName) {
+                                      accountTypeMapping[a.accountName] =
+                                        a.AccountType || "Primary";
+                                    }
+                                  });
                                   // For custom account groups, use the selected account under as parent
                                   let parentGroup = accountTypeMapping[value];
                                   if (
@@ -2168,10 +2183,21 @@ accountsrefetch()
                                       "reference",
                                       "guarantor",
                                     ];
-                                    // Combine predefined types with custom account groups
+                                    // Combine predefined types with custom account groups and existing (non-deleted) groups from server
+                                    const dynamicNames = [
+                                      ...customAccountGroups.map((g) => g.name),
+                                      ...(accounts?.map((a) => a.accountName) ||
+                                        []),
+                                    ];
+                                    // Dedupe and avoid duplicating predefined names
+                                    const uniqueDynamic = Array.from(
+                                      new Set(dynamicNames)
+                                    ).filter(
+                                      (n) => !predefinedAccountTypes.includes(n)
+                                    );
                                     const accountTypes = [
                                       ...predefinedAccountTypes,
-                                      ...customAccountGroups.map((g) => g.name),
+                                      ...uniqueDynamic,
                                     ];
 
                                     const filteredAccountTypes =
@@ -3142,6 +3168,13 @@ accountsrefetch()
                         customAccountGroups.forEach((group) => {
                           accountTypeMapping[group.name] = group.parent;
                         });
+                        // Add existing account groups from server to the mapping
+                        accounts?.forEach((a) => {
+                          if (a?.accountName) {
+                            accountTypeMapping[a.accountName] =
+                              a.AccountType || "Primary";
+                          }
+                        });
                         // For custom account groups, use the selected account under as parent
                         let parentGroup = accountTypeMapping[value];
                         if (
@@ -3214,10 +3247,19 @@ accountsrefetch()
                             "reference",
                             "guarantor",
                           ];
-                          // Combine predefined types with custom account groups
+                          // Combine predefined types with custom account groups and existing (non-deleted) groups from server
+                          const dynamicNames = [
+                            ...customAccountGroups.map((g) => g.name),
+                            ...(accounts
+                              ?.filter((a) => a.isActive !== false)
+                              .map((a) => a.accountName) || []),
+                          ];
+                          const uniqueDynamic = Array.from(
+                            new Set(dynamicNames)
+                          ).filter((n) => !predefinedAccountTypes.includes(n));
                           const accountTypes = [
                             ...predefinedAccountTypes,
-                            ...customAccountGroups.map((g) => g.name),
+                            ...uniqueDynamic,
                           ];
                           const filteredAccountTypes = accountTypes.filter(
                             (type) =>

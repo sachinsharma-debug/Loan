@@ -32,6 +32,12 @@ interface GoldRateSet {
 }
 
 const GoldPage: React.FC = () => {
+  // Helper to format date as dd/mm/yyyy
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [goldRateSets, setGoldRateSets] = useState<GoldRateSet[]>([]);
@@ -262,7 +268,7 @@ const GoldPage: React.FC = () => {
                 return filtered.map((rateSet) => (
                   <TableRow key={rateSet.id}>
                     <TableCell className="font-medium">
-                      {rateSet.date}
+                      {formatDate(rateSet.date)}
                     </TableCell>
                     {goldCarats.map((carat) => (
                       <TableCell key={carat}>
@@ -318,7 +324,7 @@ const GoldPage: React.FC = () => {
               <div>
                 <Label>Date</Label>
                 <div className="mt-1 text-lg font-semibold text-gray-900">
-                  {viewingRateSet.date}
+                  {formatDate(viewingRateSet.date)}
                 </div>
               </div>
               <div className="space-y-2">
