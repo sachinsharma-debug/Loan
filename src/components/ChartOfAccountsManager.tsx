@@ -2090,6 +2090,11 @@ accountsrefetch()
                                     reference: "Sundry Creditors",
                                     guarantor: "Sundry Creditors",
                                   };
+
+
+
+
+                                  
                                   // Add custom account groups to the mapping
                                   customAccountGroups.forEach((group) => {
                                     accountTypeMapping[group.name] =
